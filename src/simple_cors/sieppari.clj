@@ -1,12 +1,14 @@
 (ns simple-cors.sieppari
-  (:require [sieppari.context :as context]))
+  (:require [sieppari.context :as context]
+            [simple-cors.core :as cors]))
 
 (defn cors-interceptor
-  [cors-configs]
-  (let [enter-fn (fn short-cricuited-cors-enter
+  [{:keys [cors-configs forbidden-response]}]
+  (let [compiled-configs (cors/compile-cors-configs cors-configs)
+        enter-fn (fn short-cricuited-cors-enter
                    [ctx]
-                   (let [request-origin (get-in ctx [:request :headers "origin"])
-                         config (first (filter (cors-config-for-origin? request-origin) cors-configs))]
+                   (let [request-origin (-> ctx :request :headers (get "origin"))
+                         config (get compiled-configs request-origin)]
                      (cond
                        (and request-origin config)
                        (assoc ctx :cors/config config :cors/request-origin request-origin)
@@ -19,6 +21,6 @@
      :leave (fn cors-leave
               [ctx]
               (let [request-origin (:cors/request-origin ctx)
-                    config (:cors/config ctx)]
+                    response-fn (-> ctx :cors/config :cors-response-fn)]
                 (cond-> ctx
-                        config (update :response (config :cors-response-fn) request-origin))))}))
+                        response-fn (update :response response-fn request-origin))))}))

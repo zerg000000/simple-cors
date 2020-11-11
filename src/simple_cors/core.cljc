@@ -16,12 +16,6 @@
        (contains? (:headers req) "access-control-request-method")))
 
 
-(defn cors-config-for-origin?
-  [request-origin]
-  (fn [{:keys [origin-for?]}]
-    (origin-for? request-origin)))
-
-
 (defn handle-preflight
   [preflight-response-fn request-origin forbidden-response ok-response]
   (cond
@@ -39,9 +33,9 @@
     [req]
     (if (preflight-request? req)
       (let [request-origin (-> req :headers (get "origin"))
-            for-origin? (cors-config-for-origin? request-origin)
-            config (first (filterv for-origin? cors-configs))]
-        (handle-preflight config request-origin forbidden-response ok-response))
+            config (get cors-configs request-origin)]
+        (handle-preflight (:preflight-response-fn config)
+                          request-origin forbidden-response ok-response))
       forbidden-response)))
 
 
@@ -83,15 +77,26 @@
 
 (defn make-cors-response-fn [config]
   (let [response-headers (response-headers config)]
-    (fn [response request-origin]
+    (fn cors-response-fn [response request-origin]
       (update response :headers merge
               response-headers
               {"access-control-allow-origin" request-origin
                "vary" request-origin}))))
 
-(defn make-normal-cors
+
+(defn compile-cors-config
   [config]
   {:preflight-response-fn (make-preflight-response-fn config)
-   :origin-for? (-> config :origins set)
    :cors-response-fn (make-cors-response-fn config)})
+
+
+(defn compile-cors-configs
+  [configs]
+  (reduce
+    (fn [acc config]
+      (-> (zipmap (:origins config)
+                  (repeat (compile-cors-config config)))
+          (merge acc)))
+    {}
+    configs))
 
