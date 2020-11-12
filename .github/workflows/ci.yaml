@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+env:
+  JAVA_VERSION: '11.0.5'
+  TOOLS_DEPS_VERSION: '1.10.1.536'
+
+jobs:
+  test:
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/cache@v1
+        id: cache
+        with:
+          path: /root/.m2/
+          key: deps-v2-${{ hashFiles('deps.edn') }}
+      - uses: actions/setup-java@v1
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: DeLaGuardo/setup-clojure@master
+        with:
+          tools-deps: ${{ env.TOOLS_DEPS_VERSION }}
+      - run: bin/kaocha

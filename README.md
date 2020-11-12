@@ -38,6 +38,7 @@ When use in ring handler
 * [MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
 
 ### Reference Implementation 
+
 * [pedestal](https://github.com/pedestal/pedestal/blob/aa71a3a630dd21861c0682eeeebec762cbf3f85c/service/src/io/pedestal/http/cors.clj)
 * [nasus](https://github.com/kachayev/nasus/blob/371d60e08948c52c56ae1f0ac3f39f4105383aaf/src/http/server.clj#L317)
 * [netty](https://github.com/barchart/barchart-project-netty/blob/master/codec-http/src/main/java/io/netty/handler/codec/http/cors/CorsHandler.java)
