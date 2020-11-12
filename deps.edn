@@ -4,4 +4,5 @@
  :aliases
         {:test {:extra-paths ["test"]
                 :extra-deps  {org.clojure/test.check {:mvn/version "1.0.0"}
+                              metosin/reitit {:mvn/version "0.5.10"}
                               lambdaisland/kaocha    {:mvn/version "1.0.700"}}}}}

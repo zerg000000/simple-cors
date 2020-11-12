@@ -31,46 +31,13 @@
         "false since don't have origin")))
 
 
-(deftest test-compile-cors-configs
+(deftest test-compile-cors-config
   (let [config {:allowed-request-methods [:get]
                 :allowed-request-headers ["Authorization" "Content-Type"]
                 :origins ["https://yahoo.com"
                           "https://google.com"]
                 :max-age 300}
-        configs (cors/compile-cors-configs [config])]
-    (is (= (keys configs)
+        cors (cors/compile-cors-config config)]
+    (is (= (keys cors)
            (:origins config))
         "should compile to origin/config map")))
-
-(deftest test-ring-middleware
-  (let [config {:allowed-request-methods [:post :get]
-                :allowed-request-headers ["Authorization" "Content-Type"]
-                :origins ["https://yahoo.com"
-                          "https://google.com"]
-                :max-age 300}
-        configs (cors/compile-cors-configs [config])
-        handler (fn [req] {:status 200 :body "OK"})
-        app (mdw/wrap-cors handler {:cors-configs configs})]
-
-    (is (= {:headers {"access-control-allow-headers" "Authorization, Content-Type",
-                      "access-control-allow-methods" "POST, GET",
-                      "access-control-allow-origin" "https://yahoo.com",
-                      "access-control-max-age" 300,
-                      "vary" "https://yahoo.com"},
-            :status 200}
-           (app {:request-method :options
-                 :headers {"origin" "https://yahoo.com"
-                           "access-control-request-headers" "authorization,content-type"
-                           "access-control-request-method" "POST"}}))
-        "should return preflight response")
-
-    (is (= {:headers {"access-control-allow-origin" "https://yahoo.com",
-                      "vary" "https://yahoo.com"},
-            :body "OK"
-            :status 200}
-           (app {:request-method :post
-                 :headers {"origin" "https://yahoo.com"
-                           "access-control-request-headers" "authorization,content-type"
-                           "access-control-request-method" "POST"}}))
-        "should return preflight response")))
-
