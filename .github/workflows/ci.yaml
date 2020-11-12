@@ -12,13 +12,14 @@ env:
 
 jobs:
   test:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - uses: actions/cache@v1
         id: cache
         with:
-          path: /root/.m2/
-          key: deps-v2-${{ hashFiles('deps.edn') }}
+          path: ~/.m2/
+          key: deps-v1-${{ hashFiles('deps.edn') }}
       - uses: actions/setup-java@v1
         with:
           java-version: ${{ env.JAVA_VERSION }}
