@@ -52,13 +52,15 @@
 (defn make-cors-preflight-handler
   [cors forbidden-response ok-response]
   (fn cors-preflight-handler
-    [req]
-    (if (preflight-request? req)
-      (let [request-origin (-> req :headers (get "origin"))
-            cors-handler (get cors request-origin)]
-        (handle-preflight cors-handler
-                          request-origin forbidden-response ok-response))
-      forbidden-response)))
+    ([req]
+     (if (preflight-request? req)
+       (let [request-origin (-> req :headers (get "origin"))
+             cors-handler (get cors request-origin)]
+         (handle-preflight cors-handler
+                           request-origin forbidden-response ok-response))
+       forbidden-response))
+    ([req respond raise]
+     (respond (cors-preflight-handler req)))))
 
 
 (defn preflight-response-headers
@@ -68,10 +70,7 @@
                                                (map name)
                                                (map str/upper-case)
                                                (str/join ", "))
-           "access-control-allow-headers" (->> (-> (:allowed-request-headers config)
-                                                   (set)
-                                                   ; https://fetch.spec.whatwg.org/#cors-safelisted-request-header
-                                                   (conj "Content-Type" "Accept" "Accept-Language" "Content-Language"))
+           "access-control-allow-headers" (->> (:allowed-request-headers config)
                                                (map name)
                                                (str/join ", "))
            "access-control-max-age"       (:max-age config 0)}

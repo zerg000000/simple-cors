@@ -6,6 +6,10 @@
   ([_] ok-response)
   ([_ respond raise] (respond ok-response)))
 
+(defn ok-future-handler
+  ([_] ok-response)
+  ([_ respond raise] (respond (future ok-response))))
+
 (def cors-config {:allowed-request-methods [:post :get]
                   :allowed-request-headers ["Authorization"]
                   :origins ["https://yahoo.com"
@@ -16,11 +20,11 @@
   {:request-method :options
    :uri "/api"
    :headers {"origin" "https://yahoo.com"
-             "access-control-request-headers" "authorization,content-type"
+             "access-control-request-headers" "authorization"
              "access-control-request-method" "POST"}})
 
 (def normal-preflight-response
-  {:headers {"access-control-allow-headers" "Authorization, Accept-Language, Content-Language, Content-Type, Accept"
+  {:headers {"access-control-allow-headers" "Authorization"
              "access-control-allow-methods" "POST, GET"
              "access-control-allow-origin" "https://yahoo.com"
              "access-control-max-age" 300

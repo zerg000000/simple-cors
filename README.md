@@ -6,7 +6,7 @@ Bare minimum CORS handler for Clojure. Alpha quality.
 
 * Provide just enough CORS required by [Browser](https://fetch.spec.whatwg.org/#cors-protocol).
 * Reasonable performance
-* Support ring middleware / sieppari interceptor
+* Support ring middleware / reitit interceptor
 * Support all CORS feature, especially `Access-Control-Max-Age`
 
 ## Get Started
@@ -27,6 +27,29 @@ When use in ring handler
                                            :origins ["https://yahoo.com"
                                                      "https://google.com"]
                                            :max-age 300}}))
+```
+
+When use in reitit
+
+```clojure
+(require '[simple-cors.reitit.interceptor :as cors]
+         '[reitit.interceptor.sieppari]
+         '[reitit.http :as http])
+
+(def app (http/ring-handler
+           (http/router routes
+                        {:reitit.http/default-options-endpoint 
+                         (cors/default-options-endpoint {:cors-config {:allowed-request-methods [:post :get]
+                                                                       :allowed-request-headers ["Authorization"]
+                                                                       :origins ["https://yahoo.com"
+                                                                                 "https://google.com"]
+                                                                       :max-age 300}})})
+          {:executor reitit.interceptor.sieppari/executor
+           :interceptors [(interceptor/cors-interceptor {:cors-config {:allowed-request-methods [:post :get]
+                                                                       :allowed-request-headers ["Authorization"]
+                                                                       :origins ["https://yahoo.com"
+                                                                                 "https://google.com"]
+                                                                       :max-age 300}})]}))
 ```
 
 
