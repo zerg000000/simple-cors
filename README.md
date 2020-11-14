@@ -62,8 +62,8 @@ Full config map, you can also see the spec in `simple-cors.specs`
                          "https://google.com"]
                :max-age 300
                :exposed-headers ["x-amz-date"]}
-:preflight-forbidden-response {:status 403}
-:preflight-ok-response {:status 200}}
+ :preflight-forbidden-response {:status 403}
+ :preflight-ok-response {:status 200}}
 ```
 
 ## Why
