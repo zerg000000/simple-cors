@@ -10,15 +10,15 @@
         preflight-handler (cors/make-cors-preflight-handler cors preflight-forbidden-response preflight-ok-response)]
     (fn cors-middleware
       ([req]
-       (if (= :options (:request-method req))
+       (if (identical? :options (:request-method req))
          (preflight-handler req)
-         (if-let [cors-handler (get cors (-> req :headers (get "origin")))]
+         (if-let [cors-handler (get cors (cors/get-origin req))]
            (cors/add-headers-to-response cors-handler (handler req))
            (handler req))))
       ([req respond raise]
-       (if (= :options (:request-method req))
+       (if (identical? :options (:request-method req))
          (respond (preflight-handler req))
-         (if-let [cors-handler (get cors (-> req :headers (get "origin")))]
+         (if-let [cors-handler (get cors (cors/get-origin req))]
            (handler req #(respond (cors/add-headers-to-response cors-handler %))
                     raise)
            (handler req respond raise)))))))

@@ -9,14 +9,14 @@
 (def default-preflight-ok-response {:status 200})
 
 
-(defprotocol CORS
-  (origin [this])
-  (preflight-response [this])
-  (add-headers-to-response [this response]))
+(defprotocol CORSOriginHandler
+  (origin [this] "Origin that this handler can handle")
+  (preflight-response [this] "Success preflight response for the origin")
+  (add-headers-to-response [this response] "Add CORS headers to response for the origin"))
 
 
-(deftype CORSHandler [preflight-headers response-headers origin]
-  CORS
+(deftype CORSOriginHandlerImpl [preflight-headers response-headers origin]
+  CORSOriginHandler
   (origin [this] origin)
   (preflight-response [this]
     {:headers (assoc preflight-headers
@@ -33,9 +33,14 @@
 (defn preflight-request?
   "Check if the ring request is a valid preflight request"
   [req]
-  (and (= :options (:request-method req))
+  (and (identical? :options (:request-method req))
        (contains? (:headers req) "origin")
        (contains? (:headers req) "access-control-request-method")))
+
+
+(defn get-origin
+  [req]
+  (-> req :headers (get "origin")))
 
 
 (defn handle-preflight
@@ -50,11 +55,12 @@
 
 
 (defn make-cors-preflight-handler
+  "Create a ring handler fn that only handle preflight request"
   [cors forbidden-response ok-response]
   (fn cors-preflight-handler
     ([req]
      (if (preflight-request? req)
-       (let [request-origin (-> req :headers (get "origin"))
+       (let [request-origin (get-origin req)
              cors-handler (get cors request-origin)]
          (handle-preflight cors-handler
                            request-origin forbidden-response ok-response))
@@ -91,11 +97,11 @@
 
 
 (defn compile-cors-config
-  "Compile CORS config to map[string,CORSHandler]"
+  "Compile CORS config to map[string,CORSOriginHandler]"
   [config]
   (let [preflight-headers (preflight-response-headers config)
         cors-headers (response-headers config)]
     (->> (for [origin (:origins config)]
-           [origin (->CORSHandler preflight-headers cors-headers origin)])
+           [origin (->CORSOriginHandlerImpl preflight-headers cors-headers origin)])
          (into {}))))
 

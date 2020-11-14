@@ -10,7 +10,7 @@
     {:name ::cors
      :leave (fn cors-leave
               [ctx]
-              (let [request-origin (-> ctx :request :headers (get "origin"))
+              (let [request-origin (-> ctx :request cors/get-origin)
                     cors-handler (get cors request-origin)]
                 (cond-> ctx
                         cors-handler (update :response #(cors/add-headers-to-response cors-handler %)))))}))

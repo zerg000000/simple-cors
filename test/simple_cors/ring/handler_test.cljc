@@ -35,7 +35,7 @@
   (binding [*app* (mdw/wrap data/ok-handler {:cors-config data/cors-config})]
     (f)))
 
-(use-fixtures :once (juxt provide-ring provide-reitit))
+(use-fixtures :once (juxt provide-ring provide-reitit provide-reitit-future))
 
 (deftest test-ring-handler
   (testing "normal browser behaviour"
