@@ -21,10 +21,14 @@
     </developer>
   </developers>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
   <scm>
-    <url>https://github.com/$USER/$PROJECT</url>
-    <connection>scm:git:git://github.com/$USER/$PROJECT.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/$USER/$PROJECT.git</developerConnection>
+    <url>https://github.com/zerg000000/simple-cors</url>
+    <connection>scm:git:git://github.com/zerg000000/simple-cors.git</connection>
+    <developerConnection>scm:git:git@github.com:zerg000000/simple-cors.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
