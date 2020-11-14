@@ -47,7 +47,7 @@ When use in [Reitit](https://github.com/metosin/reitit)
                   {:reitit.http/default-options-endpoint 
                    (cors/default-options-endpoint config)})
      {:executor reitit.interceptor.sieppari/executor
-      :interceptors [(interceptor/cors-interceptor config)]})))
+      :interceptors [(cors/cors-interceptor config)]})))
 ```
 
 Full config map, you can also see the spec in `simple-cors.specs`
@@ -59,18 +59,20 @@ Full config map, you can also see the spec in `simple-cors.specs`
                :origins ["https://yahoo.com"
                          "https://google.com"]
                :max-age 300
-               :exposed-headers ["x-amz-date"]}}
+               :exposed-headers ["x-amz-date"]}
+:preflight-forbidden-response {:status 403}
+:preflight-ok-response {:status 200}}
 ```
 
-## Detail
+## Why
 
 ### Support origin exact match only
 
-Since regex is bad for performance and hard to write flawless pattern.
+Since regex is bad for performance and hard to write a flawless pattern.
 
 ### Not Support Any Origin
 
-Since this is not used in my application, unless someone could provide a PR
+Since I don't use Any Origin `*`. We will have this feature unless someone could provide a PR ;-)
 
 ### Not checking or blocking invalid request
 

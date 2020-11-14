@@ -15,19 +15,15 @@
   (add-headers-to-response [this response] "Add CORS headers to response for the origin"))
 
 
-(deftype CORSOriginHandlerImpl [preflight-headers response-headers origin]
+(deftype CORSOriginStaticHandlerImpl [preflight-headers response-headers origin]
   CORSOriginHandler
   (origin [this] origin)
   (preflight-response [this]
-    {:headers (assoc preflight-headers
-                "access-control-allow-origin" origin
-                "vary" origin)
+    {:headers preflight-headers
      :status 200})
   (add-headers-to-response [this response]
     (update response :headers merge
-            response-headers
-            {"access-control-allow-origin" origin
-             "vary" origin})))
+            response-headers)))
 
 
 (defn preflight-request?
@@ -71,7 +67,7 @@
 
 (defn preflight-response-headers
   "Generate preflight response headers from config"
-  [config]
+  [config origin]
   (cond-> {"access-control-allow-methods" (->> (:allowed-request-methods config)
                                                (map name)
                                                (map str/upper-case)
@@ -83,25 +79,31 @@
           (true? (:allow-credentials? config))
           (assoc "access-control-allow-credentials" "true")
           (seq (:preflight-response-headers config))
-          (merge (:preflight-response-headers config))))
+          (merge (:preflight-response-headers config))
+          origin
+          (assoc "access-control-allow-origin" origin
+                 "vary" origin)))
 
 
 (defn response-headers
   "Generate CORS headers for a valid request"
-  [config]
+  [config origin]
   (cond-> {}
           (true? (:allow-credentials? config))
           (assoc "access-control-allow-credentials" "true")
           (seq (:exposed-headers config))
-          (assoc "access-control-expose-headers" (:exposed-headers config))))
+          (assoc "access-control-expose-headers" (:exposed-headers config))
+          origin
+          (assoc "access-control-allow-origin" origin
+                 "vary" origin)))
 
 
 (defn compile-cors-config
   "Compile CORS config to map[string,CORSOriginHandler]"
   [config]
-  (let [preflight-headers (preflight-response-headers config)
-        cors-headers (response-headers config)]
-    (->> (for [origin (:origins config)]
-           [origin (->CORSOriginHandlerImpl preflight-headers cors-headers origin)])
-         (into {}))))
+  (->> (for [origin (:origins config)]
+         [origin (->CORSOriginStaticHandlerImpl (preflight-response-headers config origin)
+                                                (response-headers config origin)
+                                                origin)])
+       (into {})))
 
