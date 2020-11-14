@@ -3,3 +3,6 @@
 
 *.iml
 .nrepl-port
+*.lst
+*.properties
+*.jar

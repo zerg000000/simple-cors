@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>zerg000000</groupId>
+  <artifactId>simple-cors</artifactId>
+  <version>LATEST</version>
+  <name>simple-cors</name>
+  <description>Simply usable CORS middlware/interceptor</description>
+  <url>https://github.com/zerg000000/simple-cors</url>
+
+  <licenses>
+    <license>
+      <name>MIT license</name>
+      <url>https://github.com/zerg000000/simple-cors/blob/master/LICENSE</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Albert Lai</name>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/$USER/$PROJECT</url>
+    <connection>scm:git:git://github.com/$USER/$PROJECT.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/$USER/$PROJECT.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+</project>

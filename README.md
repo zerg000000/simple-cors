@@ -1,6 +1,8 @@
 # Simple CORS
 
-Bare minimum CORS handler for Clojure. Alpha quality.
+[![Clojars Project](https://img.shields.io/clojars/v/zerg000000/simple-cors.svg)](https://clojars.org/zerg000000/simple-cors)
+
+Bare minimum CORS middleware/interceptor for Clojure.
 
 ## Features
 
@@ -14,10 +16,10 @@ Bare minimum CORS handler for Clojure. Alpha quality.
 Add to your deps.edn
 
 ```clojure
-{zerg000000/simple-cors {:git/url "https://github.com/zerg000000/simple-cors" :sha "..."}}
+{zerg000000/simple-cors {:mvn/version "0.0.2"}}
 ```
 
-When use in [ring](https://github.com/ring-clojure/ring) handler
+When use in [Ring](https://github.com/ring-clojure/ring) handler
 
 ```clojure
 (require '[simple-cors.ring.middleware :as cors])
@@ -77,7 +79,7 @@ Since I don't use Any Origin `*`. We will have this feature unless someone could
 ### Not checking or blocking invalid request
 
 Since the main idea of CORS is to provide information for a browser to take action.
-In most of the case, we can do little on pure server side
+In most of the cases, we can do little on pure server side
 
 ## Reference
 
