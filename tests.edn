@@ -1,4 +1,7 @@
 #kaocha/v1
 {:tests [{:id          :unit
           :test-paths  ["test"]
-          :ns-patterns [".*"]}]}
+          :ns-patterns [".*"]}]
+ :plugins [:orchestra
+           :preloads]
+ :kaocha.plugin.preloads/ns-names [simple-cors.specs]}

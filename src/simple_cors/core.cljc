@@ -11,19 +11,43 @@
 
 (defprotocol CORSOriginHandler
   (origin [this] "Origin that this handler can handle")
-  (preflight-response [this] "Success preflight response for the origin")
-  (add-headers-to-response [this response] "Add CORS headers to response for the origin"))
+  (preflight-response [this request-origin] "Success preflight response for the origin")
+  (add-headers-to-response [this response request-origin] "Add CORS headers to response for the origin"))
 
 
-(deftype CORSOriginStaticHandlerImpl [preflight-headers response-headers origin]
+(deftype CORSOriginStaticHandler [preflight-headers response-headers origin]
   CORSOriginHandler
   (origin [this] origin)
-  (preflight-response [this]
+  (preflight-response [this _]
     {:headers preflight-headers
      :status 200})
-  (add-headers-to-response [this response]
+  (add-headers-to-response [this response _]
     (update response :headers merge
             response-headers)))
+
+
+(defprotocol CORSOriginHandlerLookup
+  (get-handler [this request-origin]))
+
+
+(extend-protocol CORSOriginHandlerLookup
+  clojure.lang.APersistentMap
+  (get-handler [this request-origin] (get this request-origin)))
+
+
+(deftype CORSOriginAnyOriginHandler [preflight-headers response-headers]
+  CORSOriginHandler
+  (origin [this] "*")
+  (preflight-response [this request-origin]
+    {:headers preflight-headers
+     :status 200})
+  (add-headers-to-response [this response request-origin]
+    (update response :headers merge
+            response-headers))
+  CORSOriginHandlerLookup
+  (get-handler [this request-origin]
+    (when-not (nil? request-origin)
+      this)))
 
 
 (defn preflight-request?
@@ -43,7 +67,7 @@
   [cors-handler request-origin forbidden-response ok-response]
   (cond
     cors-handler
-    (preflight-response cors-handler)
+    (preflight-response cors-handler request-origin)
     request-origin
     forbidden-response
     :else
@@ -57,7 +81,7 @@
     ([req]
      (if (preflight-request? req)
        (let [request-origin (get-origin req)
-             cors-handler (get cors request-origin)]
+             cors-handler (get-handler cors request-origin)]
          (handle-preflight cors-handler
                            request-origin forbidden-response ok-response))
        forbidden-response))
@@ -81,8 +105,9 @@
           (seq (:preflight-response-headers config))
           (merge (:preflight-response-headers config))
           origin
-          (assoc "access-control-allow-origin" origin
-                 "vary" origin)))
+          (assoc "access-control-allow-origin" origin)
+          (not= origin "*")
+          (assoc "vary" origin)))
 
 
 (defn response-headers
@@ -94,16 +119,30 @@
           (seq (:exposed-headers config))
           (assoc "access-control-expose-headers" (:exposed-headers config))
           origin
-          (assoc "access-control-allow-origin" origin
-                 "vary" origin)))
+          (assoc "access-control-allow-origin" origin)
+          (not= origin "*")
+          (assoc "vary" origin)))
 
 
-(defn compile-cors-config
+(defn compile-cors-static-config
   "Compile CORS config to map[string,CORSOriginHandler]"
   [config]
   (->> (for [origin (:origins config)]
-         [origin (->CORSOriginStaticHandlerImpl (preflight-response-headers config origin)
-                                                (response-headers config origin)
-                                                origin)])
+         [origin (->CORSOriginStaticHandler (preflight-response-headers config origin)
+                                            (response-headers config origin)
+                                            origin)])
        (into {})))
 
+
+(defn compile-cors-any-origin-config
+  "Compile cors for any origin"
+  [config]
+  (->CORSOriginAnyOriginHandler (preflight-response-headers config "*")
+                                (response-headers config "*")))
+
+
+(defn compile-cors-config
+  [config]
+  (cond
+    (= "*" (:origins config)) (compile-cors-any-origin-config config)
+    (sequential? (:origins config)) (compile-cors-static-config config)))

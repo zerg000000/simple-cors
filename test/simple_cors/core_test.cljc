@@ -1,7 +1,11 @@
 (ns simple-cors.core-test
   (:require [clojure.test :refer :all]
+            [clojure.spec.alpha :as s]
             [simple-cors.core :as cors]
-            [simple-cors.ring.middleware :as mdw]))
+            [simple-cors.specs]
+            [expound.alpha :as expound]))
+
+(set! s/*explain-out* (expound/custom-printer {}))
 
 (deftest test-preflight-request?
   (testing "skip preflight check if don't have cors headers"
@@ -31,13 +35,42 @@
         "false since don't have origin")))
 
 
-(deftest test-compile-cors-config
+(deftest test-compile-cors-static-config
   (let [config {:allowed-request-methods [:get]
                 :allowed-request-headers ["Authorization" "Content-Type"]
                 :origins ["https://yahoo.com"
                           "https://google.com"]
                 :max-age 300}
         cors (cors/compile-cors-config config)]
-    (is (= (keys cors)
-           (:origins config))
-        "should compile to origin/config map")))
+    (is (cors/get-handler cors "https://yahoo.com")
+        "should get handler for origins")
+    (is (cors/get-handler cors "https://google.com")
+        "should get handler for origins")
+    (is (nil? (cors/get-handler cors "https://baidu.cn"))
+        "should not get handler for origin that not in list")))
+
+
+(deftest test-compile-cors-any-origin-config
+  (let [config {:allowed-request-methods [:get]
+                :allowed-request-headers ["Authorization"]
+                :origins "*"
+                :max-age 300}
+        cors (cors/compile-cors-config config)]
+    (is (cors/get-handler cors "https://yahoo.com")
+        "should get handler for all origins")
+    (is (cors/get-handler cors "https://google.com")
+        "should get handler for all origins")
+    (is (nil? (cors/get-handler cors nil))
+        "should not get handler for no origin")
+    (let [h (cors/get-handler cors "https://anyway.co")]
+      (is (= {:headers {"access-control-allow-headers" "Authorization"
+                        "access-control-allow-methods" "GET"
+                        "access-control-allow-origin" "*"
+                        "access-control-max-age" 300}
+              :status 200}
+             (cors/preflight-response h "https://anyway.co"))
+          "should allow preflight for all origins")
+      (is (= {:headers {"access-control-allow-origin" "*"}
+              :status 200}
+             (cors/add-headers-to-response h {:status 200} "https://anyway.co"))
+          "should add cors headers for all origins"))))

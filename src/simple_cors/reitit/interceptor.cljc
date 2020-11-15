@@ -11,9 +11,9 @@
      :leave (fn cors-leave
               [ctx]
               (let [request-origin (-> ctx :request cors/get-origin)
-                    cors-handler (get cors request-origin)]
+                    cors-handler (cors/get-handler cors request-origin)]
                 (cond-> ctx
-                        cors-handler (update :response #(cors/add-headers-to-response cors-handler %)))))}))
+                        cors-handler (update :response #(cors/add-headers-to-response cors-handler % request-origin)))))}))
 
 (defn make-default-options-endpoint
   [{:keys [cors-config
