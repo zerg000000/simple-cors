@@ -84,7 +84,7 @@ Some casual user might want CORS matched with any origin
                ...}}
 ```
 
-The ultimate powerful solution is to provide your own matching function
+The ultimate solution is to provide your own matching function
 
 ```clojure
 {:cors-config {...
@@ -106,7 +106,23 @@ In most of the cases, we can do little on pure server side
 
 ### Only support Ring and Reitit
 
-Personally, I only use Ring and Reitit. Pedestal have it own CORS intereceptor. 
+Personally, I only use Ring and Reitit. Pedestal have it own CORS interceptor. 
+
+Supporting Aleph could as simple as
+
+```clojure
+(defn wrap-cors [handler {:keys [cors-config]}]
+  (let [cors (cors/compile-cors-config cors-config)]
+    (fn [req]
+      (let [request-origin (cors/get-origin req)
+            cors-handler (cors/get-handler cors request-origin)]
+        (if (identical? :options (:request-method req))
+          (d/success-deferred (cors/handle-preflight cors-handler request-origin 
+                                                     cors/default-preflight-forbidden-response 
+                                                     cors/default-preflight-ok-response))
+          (d/chain' (handler req)
+                    #(cors/add-headers-to-response cors-handler % request-origin)))))))
+```
 
 ## TODO
 
