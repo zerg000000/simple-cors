@@ -15,12 +15,11 @@
   (add-headers-to-response [this response request-origin] "Add CORS headers to response for the origin"))
 
 
-(deftype CORSOriginStaticHandler [preflight-headers response-headers origin]
+(deftype CORSOriginStaticHandler [preflight-response-template response-headers origin]
   CORSOriginHandler
   (origin [this] origin)
   (preflight-response [this _]
-    {:headers preflight-headers
-     :status 200})
+    preflight-response-template)
   (add-headers-to-response [this response _]
     (update response :headers merge
             response-headers)))
@@ -35,12 +34,11 @@
   (get-handler [this request-origin] (get this request-origin)))
 
 
-(deftype CORSOriginAnyOriginHandler [preflight-headers response-headers]
+(deftype CORSOriginAnyOriginHandler [preflight-response-template response-headers]
   CORSOriginHandler
   (origin [this] "*")
   (preflight-response [this _]
-    {:headers preflight-headers
-     :status 200})
+    preflight-response-template)
   (add-headers-to-response [this response _]
     (update response :headers merge
             response-headers))
@@ -49,14 +47,13 @@
     (when-not (nil? request-origin)
       this)))
 
-(deftype CORSOriginFnHandler [preflight-headers response-headers allowed-origin?]
+(deftype CORSOriginFnHandler [preflight-response-template response-headers allowed-origin?]
   CORSOriginHandler
   (origin [this] "?")
   (preflight-response [this request-origin]
-    {:headers (assoc preflight-headers
-                "access-control-allow-origin" request-origin
-                "vary" request-origin)
-     :status 200})
+    (update preflight-response-template :headers assoc
+            "access-control-allow-origin" request-origin
+            "vary" request-origin))
   (add-headers-to-response [this response request-origin]
     (update response :headers merge
             (assoc response-headers
@@ -76,11 +73,13 @@
 
 
 (defn get-origin
+  "Get origin header from standard Ring request"
   [req]
   (-> req :headers (get "origin")))
 
 
 (defn handle-preflight
+  "General Preflight handling"
   [cors-handler request-origin forbidden-response ok-response]
   (cond
     cors-handler
@@ -145,7 +144,8 @@
   "Compile CORS config to map[string,CORSOriginHandler]"
   [config]
   (->> (for [origin (:origins config)]
-         [origin (->CORSOriginStaticHandler (preflight-response-headers config origin)
+         [origin (->CORSOriginStaticHandler {:status 200
+                                             :headers (preflight-response-headers config origin)}
                                             (response-headers config origin)
                                             origin)])
        (into {})))
@@ -155,7 +155,8 @@
   "Compile cors for any origin"
   [config]
   ; https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Credentialed_requests_and_wildcards
-  (->CORSOriginAnyOriginHandler (preflight-response-headers config "*")
+  (->CORSOriginAnyOriginHandler {:status 200
+                                 :headers (preflight-response-headers config "*")}
                                 (dissoc (response-headers config "*")
                                         "access-control-allow-credentials")))
 
@@ -163,15 +164,16 @@
 (defn compile-cors-fn-origin-config
   "Slow but flexible cors"
   [config]
-  (->CORSOriginFnHandler (preflight-response-headers config nil)
+  (->CORSOriginFnHandler {:status 200
+                          :headers (preflight-response-headers config nil)}
                          (response-headers config nil)
                          (:origins config)))
 
 
 (defn compile-cors-config
-  [config]
+  [{:keys [origins] :as config}]
   (cond
-    (= "*" (:origins config)) (compile-cors-any-origin-config config)
-    (sequential? (:origins config)) (compile-cors-static-config config)
-    (or (fn? (:origins config))
-        (set? (:origins config))) (compile-cors-fn-origin-config config)))
+    (= "*" origins) (compile-cors-any-origin-config config)
+    (or (sequential? origins)
+        (set? origins)) (compile-cors-static-config config)
+    (fn? origins) (compile-cors-fn-origin-config config)))
