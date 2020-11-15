@@ -8,7 +8,7 @@ on:
 
 env:
   JAVA_VERSION: '11.0.5'
-  TOOLS_DEPS_VERSION: '1.10.1.536'
+  TOOLS_DEPS_VERSION: '1.10.1.727'
 
 jobs:
   test:
