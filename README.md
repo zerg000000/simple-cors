@@ -66,20 +66,54 @@ Full config map, you can also see the spec in `simple-cors.specs`
  :preflight-ok-response {:status 200}}
 ```
 
+### Static / Any Origin / Fn CORS
+
+Normally, Static is good and enough
+
+```clojure
+{:cors-config {...
+               :origins ["https://whatever.co"]
+               ...}}
+```
+
+Some casual user might want CORS matched with any origin
+
+```clojure
+{:cors-config {...
+               :origins "*"
+               ...}}
+```
+
+The ultimate powerful solution is to provide your own matching function
+
+```clojure
+{:cors-config {...
+               :origins #{"https://whatever.co"}
+               ...}}
+; or
+{:cors-config {...
+               :origins (fn [origin] (and (str/starts-with? origin "https://")
+                                          (str/ends-with? origin ".google.com")))
+               ...}}
+```
+
 ## Why
-
-### Support origin exact match only
-
-Since regex is bad for performance and hard to write a flawless pattern.
-
-### Not Support Any Origin
-
-Since I don't use Any Origin `*`. We will have this feature unless someone could provide a PR ;-)
 
 ### Not checking or blocking invalid request
 
 Since the main idea of CORS is to provide information for a browser to take action.
 In most of the cases, we can do little on pure server side
+
+### Only support Ring and Reitit
+
+Personally, I only use Ring and Reitit. Pedestal have it own CORS intereceptor. 
+
+## TODO
+
+* performance testsuite
+* more tests
+* more docstring
+* add linter
 
 ## Reference
 

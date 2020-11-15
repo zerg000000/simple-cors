@@ -3,7 +3,8 @@
 
 (s/def :cors.config/max-age pos-int?)
 (s/def :cors.config/origins (s/or :static-origins (s/+ string?)
-                                  :any-origin #(= "*" %)))
+                                  :any-origin #(= "*" %)
+                                  :fn-origin #(or (fn? %) (set? %))))
 (s/def :cors.config/allow-credentials? boolean?)
 (s/def :cors.config/allowed-request-headers (s/+ string?))
 (s/def :cors.config/allowed-request-methods (s/every #{:get :post :put :delete}))

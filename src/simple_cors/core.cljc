@@ -38,10 +38,10 @@
 (deftype CORSOriginAnyOriginHandler [preflight-headers response-headers]
   CORSOriginHandler
   (origin [this] "*")
-  (preflight-response [this request-origin]
+  (preflight-response [this _]
     {:headers preflight-headers
      :status 200})
-  (add-headers-to-response [this response request-origin]
+  (add-headers-to-response [this response _]
     (update response :headers merge
             response-headers))
   CORSOriginHandlerLookup
@@ -49,6 +49,23 @@
     (when-not (nil? request-origin)
       this)))
 
+(deftype CORSOriginFnHandler [preflight-headers response-headers allowed-origin?]
+  CORSOriginHandler
+  (origin [this] "?")
+  (preflight-response [this request-origin]
+    {:headers (assoc preflight-headers
+                "access-control-allow-origin" request-origin
+                "vary" request-origin)
+     :status 200})
+  (add-headers-to-response [this response request-origin]
+    (update response :headers merge
+            (assoc response-headers
+              "access-control-allow-origin" request-origin
+              "vary" request-origin)))
+  CORSOriginHandlerLookup
+  (get-handler [this request-origin]
+    (when (and request-origin (allowed-origin? request-origin))
+      this)))
 
 (defn preflight-request?
   "Check if the ring request is a valid preflight request"
@@ -137,12 +154,24 @@
 (defn compile-cors-any-origin-config
   "Compile cors for any origin"
   [config]
-  (->CORSOriginAnyOriginHandler (preflight-response-headers config "*")
+  ; https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Credentialed_requests_and_wildcards
+  (->CORSOriginAnyOriginHandler (dissoc (preflight-response-headers config "*")
+                                        "access-control-allow-credentials")
                                 (response-headers config "*")))
+
+
+(defn compile-cors-fn-origin-config
+  "Slow but flexible cors"
+  [config]
+  (->CORSOriginFnHandler (preflight-response-headers config nil)
+                         (response-headers config nil)
+                         (:origins config)))
 
 
 (defn compile-cors-config
   [config]
   (cond
     (= "*" (:origins config)) (compile-cors-any-origin-config config)
-    (sequential? (:origins config)) (compile-cors-static-config config)))
+    (sequential? (:origins config)) (compile-cors-static-config config)
+    (or (fn? (:origins config))
+        (set? (:origins config))) (compile-cors-fn-origin-config config)))

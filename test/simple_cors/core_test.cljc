@@ -3,7 +3,8 @@
             [clojure.spec.alpha :as s]
             [simple-cors.core :as cors]
             [simple-cors.specs]
-            [expound.alpha :as expound]))
+            [expound.alpha :as expound]
+            [clojure.string :as str]))
 
 (set! s/*explain-out* (expound/custom-printer {}))
 
@@ -74,3 +75,19 @@
               :status 200}
              (cors/add-headers-to-response h {:status 200} "https://anyway.co"))
           "should add cors headers for all origins"))))
+
+(deftest test-compile-cors-fn-config
+  (let [config {:allowed-request-methods [:get]
+                :allowed-request-headers ["Authorization"]
+                :origins                 (fn [origin] (and (str/starts-with? origin "https://")
+                                                           (str/ends-with? origin ".com")))
+                :max-age                 300}
+        cors (cors/compile-cors-config config)]
+    (is (cors/get-handler cors "https://yahoo.com")
+        "should get handler for all https://*.com")
+    (is (cors/get-handler cors "https://google.com")
+        "should get handler for all https://*.com")
+    (is (nil? (cors/get-handler cors nil))
+        "should not get handler for no origin")
+    (is (nil? (cors/get-handler cors "https://anyway.co"))
+      "should not handle not matched origin")))
