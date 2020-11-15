@@ -155,9 +155,9 @@
   "Compile cors for any origin"
   [config]
   ; https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Credentialed_requests_and_wildcards
-  (->CORSOriginAnyOriginHandler (dissoc (preflight-response-headers config "*")
-                                        "access-control-allow-credentials")
-                                (response-headers config "*")))
+  (->CORSOriginAnyOriginHandler (preflight-response-headers config "*")
+                                (dissoc (response-headers config "*")
+                                        "access-control-allow-credentials")))
 
 
 (defn compile-cors-fn-origin-config
