@@ -1,5 +1,6 @@
 (ns simple-cors.specs
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [simple-cors.core]))
 
 (s/def :cors.config/max-age pos-int?)
 (s/def :cors.config/origins (s/or :static-origins (s/+ string?)

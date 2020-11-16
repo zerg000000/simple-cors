@@ -4,7 +4,8 @@
             [reitit.http :as http]
             [reitit.interceptor.sieppari]
             [simple-cors.reitit.interceptor :as interceptor]
-            [simple-cors.ring.middleware :as mdw]
+            [simple-cors.ring.middleware :as ring]
+            [simple-cors.aleph.middleware :as aleph]
             [simple-cors.core :as cors-core]))
 
 (def ^:dynamic *app* nil)
@@ -32,10 +33,25 @@
     (f)))
 
 (defn provide-ring [f]
-  (binding [*app* (mdw/wrap data/ok-handler {:cors-config data/cors-config})]
+  (binding [*app* (ring/wrap data/ok-handler {:cors-config data/cors-config})]
     (f)))
 
-(use-fixtures :once (juxt provide-ring provide-reitit provide-reitit-future))
+(defn wrap-aleph-async-ring-adatpor
+  [h]
+  (fn aleph-async-ring-adatpor
+    ([req] @(h req))
+    ([req respond raise]
+     (try
+       (respond @(h req))
+       (catch Exception ex (raise ex nil))))))
+
+(defn provide-aleph [f]
+  (binding [*app* (-> data/ok-future-handler
+                      (aleph/wrap {:cors-config data/cors-config})
+                      (wrap-aleph-async-ring-adatpor))]
+    (f)))
+
+(use-fixtures :once (juxt provide-ring provide-reitit provide-reitit-future provide-aleph))
 
 (deftest test-ring-handler
   (testing "normal browser behaviour"

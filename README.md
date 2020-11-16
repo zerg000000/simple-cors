@@ -52,6 +52,18 @@ When use in [Reitit](https://github.com/metosin/reitit)
       :interceptors [(cors/cors-interceptor config)]})))
 ```
 
+When use in [Aleph](https://github.com/aleph-io/aleph)
+
+```clojure
+(require '[simple-cors.aleph.middleware :as cors])
+
+(def app (cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
+                                           :allowed-request-headers ["Authorization"]
+                                           :origins ["https://yahoo.com"
+                                                     "https://google.com"]
+                                           :max-age 300}}))
+```
+
 Full config map, you can also see the spec in `simple-cors.specs`
 
 ```clojure
@@ -104,32 +116,12 @@ The ultimate solution is to provide your own matching function
 Since the main idea of CORS is to provide information for a browser to take action.
 In most of the cases, we can do little on pure server side
 
-### Only support Ring and Reitit
-
-Personally, I only use Ring and Reitit. Pedestal have it own CORS interceptor. 
-
-Supporting Aleph could as simple as
-
-```clojure
-(defn wrap-cors [handler {:keys [cors-config]}]
-  (let [cors (cors/compile-cors-config cors-config)]
-    (fn [req]
-      (let [request-origin (cors/get-origin req)
-            cors-handler (cors/get-handler cors request-origin)]
-        (if (identical? :options (:request-method req))
-          (d/success-deferred (cors/handle-preflight cors-handler request-origin 
-                                                     cors/default-preflight-forbidden-response 
-                                                     cors/default-preflight-ok-response))
-          (d/chain' (handler req)
-                    #(cors/add-headers-to-response cors-handler % request-origin)))))))
-```
-
 ## TODO
 
 - [ ] performance testsuite
 - [ ] more tests
 - [ ] more docstring
-- [ ] add linter
+- [x] ~~add linter~~
 
 ## Reference
 

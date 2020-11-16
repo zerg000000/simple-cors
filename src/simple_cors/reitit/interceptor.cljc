@@ -2,8 +2,8 @@
   (:require [simple-cors.core :as cors]))
 
 (defn cors-interceptor
-  "This interceptor is intended to be used in reitit.
-   Since reitit using a separate handler to handle {:request-method :options},
+  "Create a Reitit interceptor.
+   Since reitit using a separate handler to handle OPTIONS request,
    all preflight handling logic will not exists in this interceptor"
   [{:keys [cors-config]}]
   (let [cors (cors/compile-cors-config cors-config)]
@@ -16,6 +16,12 @@
                         cors-handler (update :response #(cors/add-headers-to-response cors-handler % request-origin)))))}))
 
 (defn make-default-options-endpoint
+  "Create a handler for reitit's :reitit.http/default-options-endpoint.
+   Accept the same config map of cors-interceptor
+
+   (http/router routes
+    {:reitit.http/default-options-endpoint (cors/default-options-endpoint config)})
+  "
   [{:keys [cors-config
            preflight-forbidden-response
            preflight-ok-response]
