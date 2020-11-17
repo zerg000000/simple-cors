@@ -8,8 +8,8 @@ Bare minimum CORS middleware/interceptor for Clojure.
 
 * Provide just enough CORS required by [Browser](https://fetch.spec.whatwg.org/#cors-protocol).
 * Reasonable performance
-* Support Ring middleware / Reitit interceptor
-* Support all CORS feature, especially `Access-Control-Max-Age`
+* Support Ring middleware / Reitit interceptor / Aleph middleware
+* Support all CORS features, especially `Access-Control-Max-Age`
 
 ## Get Started
 
@@ -25,7 +25,7 @@ When use in [Ring](https://github.com/ring-clojure/ring) handler
 (require '[simple-cors.ring.middleware :as cors])
 
 (def app (cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
-                                           :allowed-request-headers ["Authorization"]
+                                           :allowed-request-headers ["Authorization" "Content-Type"]
                                            :origins ["https://yahoo.com"
                                                      "https://google.com"]
                                            :max-age 300}}))
@@ -40,7 +40,7 @@ When use in [Reitit](https://github.com/metosin/reitit)
 
 (def app 
   (let [config {:cors-config {:allowed-request-methods [:post :get]
-                              :allowed-request-headers ["Authorization"]
+                              :allowed-request-headers ["Authorization" "Content-Type"]
                               :origins ["https://yahoo.com"
                                         "https://google.com"]
                               :max-age 300}}]
@@ -58,7 +58,7 @@ When use in [Aleph](https://github.com/aleph-io/aleph)
 (require '[simple-cors.aleph.middleware :as cors])
 
 (def app (cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
-                                           :allowed-request-headers ["Authorization"]
+                                           :allowed-request-headers ["Authorization" "Content-Type"]
                                            :origins ["https://yahoo.com"
                                                      "https://google.com"]
                                            :max-age 300}}))
@@ -68,7 +68,7 @@ Full config map, you can also see the spec in `simple-cors.specs`
 
 ```clojure
 {:cors-config {:allowed-request-methods [:post :get]
-               :allowed-request-headers ["Authorization"]
+               :allowed-request-headers ["Authorization" "Content-Type"]
                :allow-credentials? true
                :origins ["https://yahoo.com"
                          "https://google.com"]

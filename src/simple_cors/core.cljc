@@ -78,18 +78,6 @@
   (-> req :headers (get "origin")))
 
 
-(defn handle-preflight
-  "General Preflight handling"
-  [cors-handler request-origin forbidden-response ok-response]
-  (cond
-    cors-handler
-    (preflight-response cors-handler request-origin)
-    request-origin
-    forbidden-response
-    :else
-    ok-response))
-
-
 (defn make-cors-preflight-handler
   "Create a ring handler fn that only handle preflight request"
   [cors forbidden-response ok-response]
@@ -98,8 +86,13 @@
      (if (preflight-request? req)
        (let [request-origin (get-origin req)
              cors-handler (get-handler cors request-origin)]
-         (handle-preflight cors-handler
-                           request-origin forbidden-response ok-response))
+         (cond
+           cors-handler
+           (preflight-response cors-handler request-origin)
+           request-origin
+           forbidden-response
+           :else
+           ok-response))
        forbidden-response))
     ([req respond raise]
      (respond (cors-preflight-handler req)))))
