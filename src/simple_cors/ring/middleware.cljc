@@ -1,11 +1,14 @@
 (ns simple-cors.ring.middleware
-  (:require [simple-cors.core :as cors]))
+  (:require
+    [simple-cors.core :as cors]))
 
-(defn wrap [handler {:keys [cors-config
-                            preflight-forbidden-response
-                            preflight-ok-response]
-                     :or {preflight-forbidden-response cors/default-preflight-forbidden-response
-                          preflight-ok-response cors/default-preflight-ok-response}}]
+
+(defn wrap
+  [handler {:keys [cors-config
+                   preflight-forbidden-response
+                   preflight-ok-response]
+            :or {preflight-forbidden-response cors/default-preflight-forbidden-response
+                 preflight-ok-response cors/default-preflight-ok-response}}]
   (let [cors (cors/compile-cors-config cors-config)
         preflight-handler (cors/make-cors-preflight-handler cors preflight-forbidden-response preflight-ok-response)]
     (fn cors-middleware

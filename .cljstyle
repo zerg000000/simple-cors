@@ -1,0 +1,2 @@
+{:rules {:types {:types? false
+                 :protocols? false}}}

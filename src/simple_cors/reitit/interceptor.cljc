@@ -1,5 +1,7 @@
 (ns simple-cors.reitit.interceptor
-  (:require [simple-cors.core :as cors]))
+  (:require
+    [simple-cors.core :as cors]))
+
 
 (defn cors-interceptor
   "Create a Reitit interceptor.
@@ -13,7 +15,8 @@
               (let [request-origin (-> ctx :request cors/get-origin)
                     cors-handler (cors/get-handler cors request-origin)]
                 (cond-> ctx
-                        cors-handler (update :response #(cors/add-headers-to-response cors-handler % request-origin)))))}))
+                  cors-handler (update :response #(cors/add-headers-to-response cors-handler % request-origin)))))}))
+
 
 (defn make-default-options-endpoint
   "Create a handler for reitit's :reitit.http/default-options-endpoint.

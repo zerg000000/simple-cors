@@ -1,6 +1,8 @@
 (ns simple-cors.aleph.middleware
-  (:require [manifold.deferred :as d]
-            [simple-cors.core :as cors]))
+  (:require
+    [manifold.deferred :as d]
+    [simple-cors.core :as cors]))
+
 
 (defn wrap
   [handler {:keys [cors-config

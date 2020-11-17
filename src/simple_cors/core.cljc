@@ -16,13 +16,13 @@
 
 
 (deftype CORSOriginStaticHandler [preflight-response-template response-headers origin]
-  CORSOriginHandler
-  (origin [this] origin)
-  (preflight-response [this _]
-    preflight-response-template)
-  (add-headers-to-response [this response _]
-    (update response :headers merge
-            response-headers)))
+         CORSOriginHandler
+         (origin [this] origin)
+         (preflight-response [this _]
+           preflight-response-template)
+         (add-headers-to-response [this response _]
+           (update response :headers merge
+                   response-headers)))
 
 
 (defprotocol CORSOriginHandlerLookup
@@ -35,34 +35,36 @@
 
 
 (deftype CORSOriginAnyOriginHandler [preflight-response-template response-headers]
-  CORSOriginHandler
-  (origin [this] "*")
-  (preflight-response [this _]
-    preflight-response-template)
-  (add-headers-to-response [this response _]
-    (update response :headers merge
-            response-headers))
-  CORSOriginHandlerLookup
-  (get-handler [this request-origin]
-    (when-not (nil? request-origin)
-      this)))
+         CORSOriginHandler
+         (origin [this] "*")
+         (preflight-response [this _]
+           preflight-response-template)
+         (add-headers-to-response [this response _]
+           (update response :headers merge
+                   response-headers))
+         CORSOriginHandlerLookup
+         (get-handler [this request-origin]
+           (when-not (nil? request-origin)
+             this)))
+
 
 (deftype CORSOriginFnHandler [preflight-response-template response-headers allowed-origin?]
-  CORSOriginHandler
-  (origin [this] "?")
-  (preflight-response [this request-origin]
-    (update preflight-response-template :headers assoc
-            "access-control-allow-origin" request-origin
-            "vary" request-origin))
-  (add-headers-to-response [this response request-origin]
-    (update response :headers merge
-            (assoc response-headers
-              "access-control-allow-origin" request-origin
-              "vary" request-origin)))
-  CORSOriginHandlerLookup
-  (get-handler [this request-origin]
-    (when (and request-origin (allowed-origin? request-origin))
-      this)))
+         CORSOriginHandler
+         (origin [this] "?")
+         (preflight-response [this request-origin]
+           (update preflight-response-template :headers assoc
+                   "access-control-allow-origin" request-origin
+                   "vary" request-origin))
+         (add-headers-to-response [this response request-origin]
+           (update response :headers merge
+                   (assoc response-headers
+                          "access-control-allow-origin" request-origin
+                          "vary" request-origin)))
+         CORSOriginHandlerLookup
+         (get-handler [this request-origin]
+           (when (and request-origin (allowed-origin? request-origin))
+             this)))
+
 
 (defn preflight-request?
   "Check if the ring request is a valid preflight request"
@@ -109,28 +111,28 @@
                                                (map name)
                                                (str/join ", "))
            "access-control-max-age"       (:max-age config 0)}
-          (true? (:allow-credentials? config))
-          (assoc "access-control-allow-credentials" "true")
-          (seq (:preflight-response-headers config))
-          (merge (:preflight-response-headers config))
-          origin
-          (assoc "access-control-allow-origin" origin)
-          (not= origin "*")
-          (assoc "vary" origin)))
+    (true? (:allow-credentials? config))
+    (assoc "access-control-allow-credentials" "true")
+    (seq (:preflight-response-headers config))
+    (merge (:preflight-response-headers config))
+    origin
+    (assoc "access-control-allow-origin" origin)
+    (not= origin "*")
+    (assoc "vary" origin)))
 
 
 (defn response-headers
   "Generate CORS headers for a valid request"
   [config origin]
   (cond-> {}
-          (true? (:allow-credentials? config))
-          (assoc "access-control-allow-credentials" "true")
-          (seq (:exposed-headers config))
-          (assoc "access-control-expose-headers" (:exposed-headers config))
-          origin
-          (assoc "access-control-allow-origin" origin)
-          (not= origin "*")
-          (assoc "vary" origin)))
+    (true? (:allow-credentials? config))
+    (assoc "access-control-allow-credentials" "true")
+    (seq (:exposed-headers config))
+    (assoc "access-control-expose-headers" (:exposed-headers config))
+    origin
+    (assoc "access-control-allow-origin" origin)
+    (not= origin "*")
+    (assoc "vary" origin)))
 
 
 (defn compile-cors-static-config

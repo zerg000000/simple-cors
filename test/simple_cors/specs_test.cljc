@@ -1,7 +1,9 @@
 (ns simple-cors.specs-test
-  (:require [clojure.test :refer :all]
-            [clojure.spec.alpha :as s]
-            [simple-cors.specs]))
+  (:require
+    [clojure.spec.alpha :as s]
+    [clojure.test :refer :all]
+    [simple-cors.specs]))
+
 
 (deftest test-preflight-request?
   (testing "skip preflight check if don't have cors headers"

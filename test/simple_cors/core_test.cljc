@@ -1,12 +1,15 @@
 (ns simple-cors.core-test
-  (:require [clojure.test :refer :all]
-            [clojure.spec.alpha :as s]
-            [simple-cors.core :as cors]
-            [simple-cors.specs]
-            [expound.alpha :as expound]
-            [clojure.string :as str]))
+  (:require
+    [clojure.spec.alpha :as s]
+    [clojure.string :as str]
+    [clojure.test :refer :all]
+    [expound.alpha :as expound]
+    [simple-cors.core :as cors]
+    [simple-cors.specs]))
+
 
 (set! s/*explain-out* (expound/custom-printer {}))
+
 
 (deftest test-preflight-request?
   (testing "skip preflight check if don't have cors headers"
@@ -76,11 +79,13 @@
              (cors/add-headers-to-response h {:status 200} "https://anyway.co"))
           "should add cors headers for all origins"))))
 
+
 (deftest test-compile-cors-fn-config
   (let [config {:allowed-request-methods [:get]
                 :allowed-request-headers ["Authorization"]
-                :origins                 (fn [origin] (and (str/starts-with? origin "https://")
-                                                           (str/ends-with? origin ".com")))
+                :origins                 (fn [origin]
+                                           (and (str/starts-with? origin "https://")
+                                                (str/ends-with? origin ".com")))
                 :max-age                 300}
         cors (cors/compile-cors-config config)]
     (is (cors/get-handler cors "https://yahoo.com")
@@ -90,4 +95,4 @@
     (is (nil? (cors/get-handler cors nil))
         "should not get handler for no origin")
     (is (nil? (cors/get-handler cors "https://anyway.co"))
-      "should not handle not matched origin")))
+        "should not handle not matched origin")))
