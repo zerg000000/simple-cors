@@ -16,7 +16,7 @@ Bare minimum CORS middleware/interceptor for Clojure.
 Add to your deps.edn
 
 ```clojure
-{zerg000000/simple-cors {:mvn/version "0.0.4"}}
+{zerg000000/simple-cors {:mvn/version "0.0.5"}}
 ```
 
 When use in [Ring](https://github.com/ring-clojure/ring) handler
@@ -121,7 +121,6 @@ In most of the cases, we can do little on pure server side
 - [ ] performance testsuite
 - [ ] more tests
 - [ ] more docstring
-- [x] ~~add linter~~
 
 ## Reference
 
