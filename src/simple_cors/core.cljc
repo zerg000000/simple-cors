@@ -1,6 +1,7 @@
 (ns simple-cors.core
   (:require
-    [clojure.string :as str]))
+    [clojure.string :as str])
+  (:import [clojure.lang ILookup]))
 
 
 (def default-preflight-forbidden-response {:status 403})
@@ -25,15 +26,6 @@
                    response-headers)))
 
 
-(defprotocol CORSOriginHandlerLookup
-  (get-handler [this request-origin]))
-
-
-(extend-protocol CORSOriginHandlerLookup
-  clojure.lang.APersistentMap
-  (get-handler [this request-origin] (get this request-origin)))
-
-
 (deftype CORSOriginAnyOriginHandler [preflight-response-template response-headers]
          CORSOriginHandler
          (origin [this] "*")
@@ -42,10 +34,14 @@
          (add-headers-to-response [this response _]
            (update response :headers merge
                    response-headers))
-         CORSOriginHandlerLookup
-         (get-handler [this request-origin]
+         ILookup
+         (valAt [this request-origin]
            (when-not (nil? request-origin)
-             this)))
+             this))
+         (valAt [this request-origin default-handler]
+           (if-not (nil? request-origin)
+             this
+             default-handler)))
 
 
 (deftype CORSOriginFnHandler [preflight-response-template response-headers allowed-origin?]
@@ -60,10 +56,26 @@
                    (assoc response-headers
                           "access-control-allow-origin" request-origin
                           "vary" request-origin)))
-         CORSOriginHandlerLookup
-         (get-handler [this request-origin]
+         ILookup
+         (valAt [this request-origin]
            (when (and request-origin (allowed-origin? request-origin))
-             this)))
+             this))
+         (valAt [this request-origin default-handler]
+           (if (and request-origin (allowed-origin? request-origin))
+             this
+             default-handler)))
+
+
+(deftype CombinedCORSHandlerLookup [lookups any-origin-handler]
+  ILookup
+  (valAt [_ request-origin]
+    (if-let [handler (some #(get % request-origin) lookups)]
+      handler
+      any-origin-handler))
+  (valAt [_ request-origin _]
+    (if-let [handler (some #(get % request-origin) lookups)]
+      handler
+      any-origin-handler)))
 
 
 (defn preflight-request?
@@ -87,7 +99,7 @@
     ([req]
      (if (preflight-request? req)
        (let [request-origin (get-origin req)
-             cors-handler (get-handler cors request-origin)]
+             cors-handler (get cors request-origin)]
          (cond
            cors-handler
            (preflight-response cors-handler request-origin)
@@ -172,3 +184,11 @@
     (or (sequential? origins)
         (set? origins)) (compile-cors-static-config config)
     (fn? origins) (compile-cors-fn-origin-config config)))
+
+
+(defn compile-combined-cors-configs
+  ([configs] (compile-combined-cors-configs configs nil))
+  ([configs any-origin-config]
+   (->CombinedCORSHandlerLookup (map compile-cors-config configs)
+                                (when any-origin-config
+                                  (compile-cors-config any-origin-config)))))

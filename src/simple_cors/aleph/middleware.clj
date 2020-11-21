@@ -14,7 +14,7 @@
         preflight-handler (cors/make-cors-preflight-handler cors preflight-forbidden-response preflight-ok-response)]
     (fn [req]
       (let [request-origin (cors/get-origin req)
-            cors-handler (cors/get-handler cors request-origin)]
+            cors-handler (get cors request-origin)]
         (if (identical? :options (:request-method req))
           (d/success-deferred (preflight-handler req))
           (d/chain' (handler req)

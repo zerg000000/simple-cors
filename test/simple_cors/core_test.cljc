@@ -46,11 +46,11 @@
                           "https://google.com"]
                 :max-age 300}
         cors (cors/compile-cors-config config)]
-    (is (cors/get-handler cors "https://yahoo.com")
+    (is (get cors "https://yahoo.com")
         "should get handler for origins")
-    (is (cors/get-handler cors "https://google.com")
+    (is (get cors "https://google.com")
         "should get handler for origins")
-    (is (nil? (cors/get-handler cors "https://baidu.cn"))
+    (is (nil? (get cors "https://baidu.cn"))
         "should not get handler for origin that not in list")))
 
 
@@ -60,13 +60,13 @@
                 :origins "*"
                 :max-age 300}
         cors (cors/compile-cors-config config)]
-    (is (cors/get-handler cors "https://yahoo.com")
+    (is (get cors "https://yahoo.com")
         "should get handler for all origins")
-    (is (cors/get-handler cors "https://google.com")
+    (is (get cors "https://google.com")
         "should get handler for all origins")
-    (is (nil? (cors/get-handler cors nil))
+    (is (nil? (get cors nil))
         "should not get handler for no origin")
-    (let [h (cors/get-handler cors "https://anyway.co")]
+    (let [h (get cors "https://anyway.co")]
       (is (= {:headers {"access-control-allow-headers" "Authorization"
                         "access-control-allow-methods" "GET"
                         "access-control-allow-origin" "*"
@@ -88,11 +88,11 @@
                                                 (str/ends-with? origin ".com")))
                 :max-age                 300}
         cors (cors/compile-cors-config config)]
-    (is (cors/get-handler cors "https://yahoo.com")
+    (is (get cors "https://yahoo.com")
         "should get handler for all https://*.com")
-    (is (cors/get-handler cors "https://google.com")
+    (is (get cors "https://google.com")
         "should get handler for all https://*.com")
-    (is (nil? (cors/get-handler cors nil))
+    (is (nil? (get cors nil))
         "should not get handler for no origin")
-    (is (nil? (cors/get-handler cors "https://anyway.co"))
+    (is (nil? (get cors "https://anyway.co"))
         "should not handle not matched origin")))
