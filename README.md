@@ -118,7 +118,6 @@ In most of the cases, we can do little on pure server side
 
 ## TODO
 
-- [ ] performance testsuite
 - [ ] more tests
 - [ ] more docstring
 
