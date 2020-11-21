@@ -16,7 +16,7 @@ Bare minimum CORS middleware/interceptor for Clojure.
 Add to your deps.edn
 
 ```clojure
-{zerg000000/simple-cors {:mvn/version "0.0.5"}}
+{zerg000000/simple-cors {:mvn/version "0.0.6"}}
 ```
 
 When use in [Ring](https://github.com/ring-clojure/ring) handler
@@ -107,6 +107,17 @@ The ultimate solution is to provide your own matching function
                :origins (fn [origin] (and (str/starts-with? origin "https://")
                                           (str/ends-with? origin ".google.com")))
                ...}}
+```
+
+### Combine Multiple Config
+
+```clojure
+{:cors-config [{...
+                :origin "*"
+                ...}
+               {...
+                :origin ["http://abc"]
+                ...}]}
 ```
 
 ## Why
