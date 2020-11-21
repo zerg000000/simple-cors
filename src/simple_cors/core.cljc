@@ -187,8 +187,28 @@
 
 
 (defn compile-combined-cors-configs
+  "Combine multiple CORSHandlerLookup, lookup time will grow linearly"
   ([configs] (compile-combined-cors-configs configs nil))
   ([configs any-origin-config]
    (->CombinedCORSHandlerLookup (map compile-cors-config configs)
                                 (when any-origin-config
                                   (compile-cors-config any-origin-config)))))
+
+(defn compile-cors [{:keys [cors-config
+                            preflight-forbidden-response
+                            preflight-ok-response]
+                     :or {preflight-forbidden-response default-preflight-forbidden-response
+                          preflight-ok-response default-preflight-ok-response}}]
+  (let [cors (cond
+               (map? cors-config) (compile-cors-config cors-config)
+               (and (vector? cors-config) (= (count cors-config) 1))
+               (compile-cors-config (first cors-config))
+               (vector? cors-config)
+               (let [any-origin (first (filter #(= "*" (:origins %)) cors-config))
+                     others (filter #(not= "*" (:origins %)) cors-config)]
+                 (compile-combined-cors-configs others any-origin))
+               :else (throw (ex-info "not a valid cors config" {})))]
+    {:cors cors
+     :preflight-handler (make-cors-preflight-handler cors
+                                                     preflight-forbidden-response
+                                                     preflight-ok-response)}))

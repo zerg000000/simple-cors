@@ -7,8 +7,8 @@
   "Create a Reitit interceptor.
    Since reitit using a separate handler to handle OPTIONS request,
    all preflight handling logic will not exists in this interceptor"
-  [{:keys [cors-config]}]
-  (let [cors (cors/compile-cors-config cors-config)]
+  [full-config]
+  (let [{:keys [cors]} (cors/compile-cors full-config)]
     {:name ::cors
      :leave (fn cors-leave
               [ctx]
@@ -25,12 +25,6 @@
    (http/router routes
     {:reitit.http/default-options-endpoint (cors/default-options-endpoint config)})
   "
-  [{:keys [cors-config
-           preflight-forbidden-response
-           preflight-ok-response]
-    :or {preflight-forbidden-response cors/default-preflight-forbidden-response
-         preflight-ok-response cors/default-preflight-ok-response}}]
-  (let [cors (cors/compile-cors-config cors-config)]
-    (cors/make-cors-preflight-handler cors
-                                      preflight-forbidden-response
-                                      preflight-ok-response)))
+  [full-config]
+  (let [{:keys [preflight-handler]} (cors/compile-cors full-config)]
+    preflight-handler))

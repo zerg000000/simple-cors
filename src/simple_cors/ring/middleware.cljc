@@ -4,13 +4,8 @@
 
 
 (defn wrap
-  [handler {:keys [cors-config
-                   preflight-forbidden-response
-                   preflight-ok-response]
-            :or {preflight-forbidden-response cors/default-preflight-forbidden-response
-                 preflight-ok-response cors/default-preflight-ok-response}}]
-  (let [cors (cors/compile-cors-config cors-config)
-        preflight-handler (cors/make-cors-preflight-handler cors preflight-forbidden-response preflight-ok-response)]
+  [handler full-config]
+  (let [{:keys [cors preflight-handler]} (cors/compile-cors full-config)]
     (fn cors-middleware
       ([req]
        (if (identical? :options (:request-method req))
