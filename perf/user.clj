@@ -1,14 +1,16 @@
 (ns user
-  (:require [criterium.core :as cc]
-            [simple-cors.ring.middleware :as simple-cors]
-            [simple-cors.aleph.middleware :as simple-cors-aleph]
-            [simple-cors.reitit.interceptor :as simple-cors-interceptor]
-            [ring.middleware.cors :as ring-cors]
-            [com.unbounce.encors :as encors]
-            [com.unbounce.encors.aleph]
-            [manifold.deferred :as d]
-            [sieppari.async.manifold]
-            [sieppari.core :as sieppari]))
+  (:require
+    [com.unbounce.encors :as encors]
+    [com.unbounce.encors.aleph]
+    [criterium.core :as cc]
+    [manifold.deferred :as d]
+    [ring.middleware.cors :as ring-cors]
+    [sieppari.async.manifold]
+    [sieppari.core :as sieppari]
+    [simple-cors.aleph.middleware :as simple-cors-aleph]
+    [simple-cors.reitit.interceptor :as simple-cors-interceptor]
+    [simple-cors.ring.middleware :as simple-cors]))
+
 
 (defn handler
   ([req]
@@ -18,10 +20,12 @@
    (respond {:status 200
              :body "OK"})))
 
+
 (defn aleph-handler
   [req]
   (d/success-deferred {:status 200
                        :body "OK"}))
+
 
 (def preflight-request
   {:request-method :options
@@ -30,12 +34,14 @@
              "access-control-request-headers" "authorization,content-type"
              "access-control-request-method" "POST"}})
 
+
 (def request
   {:request-method :post
    :uri "/api"
    :headers {"origin" "https://google.com"
              "access-control-request-headers" "authorization,content-type"
              "access-control-request-method" "POST"}})
+
 
 (def simple-cors-config
   {:cors-config {:allowed-request-methods [:post :get]
@@ -47,6 +53,7 @@
                            "https://4.google.com"
                            "https://5.google.com"
                            "https://6.google.com"]}})
+
 
 (def encors-config
   {:allowed-origins #{"https://google.com"
@@ -65,8 +72,10 @@
    :require-origin? false
    :ignore-failures? true})
 
+
 (def simple-cors-app
   (simple-cors/wrap handler simple-cors-config))
+
 
 (def simple-cors-fn-app
   (simple-cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
@@ -79,18 +88,22 @@
                                                       "https://5.google.com"
                                                       "https://6.google.com"}}}))
 
+
 (def simple-cors-any-app
   (simple-cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
                                            :allowed-request-headers ["Authorization" "Content-Type"]
                                            :origins "*"}}))
+
 
 (def simple-cors-combined-app
   (simple-cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
                                            :allowed-request-headers ["Authorization" "Content-Type"]
                                            :origins "*"}}))
 
+
 (def simple-cors-aleph-app
   (simple-cors-aleph/wrap aleph-handler simple-cors-config))
+
 
 (def ring-cors-app
   (ring-cors/wrap-cors handler
@@ -98,15 +111,19 @@
                                                      #"https://([^.^/])+.google.com"]
                        :access-control-allow-methods [:get :post]))
 
+
 (def encors-aleph-app
   (com.unbounce.encors.aleph/wrap-cors aleph-handler encors-config))
+
 
 (def encors-app
   (encors/wrap-cors handler encors-config))
 
+
 (def sieppari-app
   [(simple-cors-interceptor/cors-interceptor simple-cors-config)
    aleph-handler])
+
 
 (comment
   ; async tests
@@ -125,6 +142,7 @@
   (cc/quick-bench (sieppari/execute sieppari-app request))
   ; Execution time mean : 23.357015 µs
   (comment))
+
 
 (comment
   (simple-cors-app request)

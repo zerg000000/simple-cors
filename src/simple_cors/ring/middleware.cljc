@@ -1,7 +1,9 @@
 (ns simple-cors.ring.middleware
   (:require
     [simple-cors.core :as cors])
-  (:import [clojure.lang ILookup]))
+  (:import
+    (clojure.lang
+      ILookup)))
 
 
 (defn wrap

@@ -1,7 +1,10 @@
 (ns simple-cors.core
   (:require
     [clojure.string :as str])
-  (:import [clojure.lang ILookup Associative]))
+  (:import
+    (clojure.lang
+      Associative
+      ILookup)))
 
 
 (def default-preflight-forbidden-response {:status 403})
@@ -21,17 +24,20 @@
 
 ;;; Credit Metosin
 ;;; https://github.com/metosin/compojure-api/blob/master/src/compojure/api/common.clj#L46
-(defn fast-merge [m1 m2]
+(defn fast-merge
+  [m1 m2]
   (reduce-kv
     (fn [acc k v]
       (fast-assoc acc k v))
     (or m1 {})
     m2))
 
+
 (defmacro val-at
   "Inline .valAt"
   [m k]
   `(.valAt  ~(with-meta m {:tag 'clojure.lang.ILookup}) ~k))
+
 
 (defprotocol CORSOriginHandler
   (preflight-response [this request-origin] "Success preflight response for the origin")
@@ -86,15 +92,15 @@
 
 
 (deftype CombinedCORSHandlerLookup [lookups any-origin-handler]
-  ILookup
-  (valAt [_ request-origin]
-    (if-let [handler (some #(val-at % request-origin) lookups)]
-      handler
-      any-origin-handler))
-  (valAt [_ request-origin _]
-    (if-let [handler (some #(val-at % request-origin) lookups)]
-      handler
-      any-origin-handler)))
+         ILookup
+         (valAt [_ request-origin]
+           (if-let [handler (some #(val-at % request-origin) lookups)]
+             handler
+             any-origin-handler))
+         (valAt [_ request-origin _]
+           (if-let [handler (some #(val-at % request-origin) lookups)]
+             handler
+             any-origin-handler)))
 
 
 (defn ^boolean preflight-request?
@@ -213,6 +219,7 @@
    (->CombinedCORSHandlerLookup (map compile-cors-config configs)
                                 (when any-origin-config
                                   (compile-cors-config any-origin-config)))))
+
 
 (defn compile-cors
   "Return {:cors ... :preflight-handler} cors must implemented ILookup for lookup handler by origin.

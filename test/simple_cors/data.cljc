@@ -1,5 +1,7 @@
 (ns simple-cors.data
-  (:require [manifold.deferred :as d]))
+  (:require
+    [manifold.deferred :as d]))
+
 
 (def ok-response {:status 200 :body "OK"})
 

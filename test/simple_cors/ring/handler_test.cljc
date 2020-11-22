@@ -1,14 +1,14 @@
 (ns simple-cors.ring.handler-test
   (:require
     [clojure.test :refer :all]
+    [manifold.deferred :as d]
     [reitit.http :as http]
     [reitit.interceptor.sieppari]
     [simple-cors.aleph.middleware :as aleph]
     [simple-cors.core :as cors-core]
     [simple-cors.data :as data]
     [simple-cors.reitit.interceptor :as interceptor]
-    [simple-cors.ring.middleware :as ring]
-    [manifold.deferred :as d]))
+    [simple-cors.ring.middleware :as ring]))
 
 
 (def ^:dynamic *app* nil)
