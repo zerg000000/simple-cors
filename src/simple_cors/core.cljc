@@ -1,7 +1,7 @@
 (ns simple-cors.core
   (:require
     [clojure.string :as str])
-  (:import [clojure.lang ILookup]))
+  (:import [clojure.lang ILookup Associative IPersistentMap]))
 
 
 (def default-preflight-forbidden-response {:status 403})
@@ -9,30 +9,46 @@
 
 (def default-preflight-ok-response {:status 200})
 
+;;; Credit Metosin
+;;; https://github.com/metosin/reitit/blob/0bcfda755f139d14cf4eff37e2b294f573215213/modules/reitit-core/src/reitit/impl.cljc#L136
+(defn fast-assoc
+  "Like assoc but only takes one kv pair. Slightly faster."
+  {:inline
+   (fn [a k v]
+     `(.assoc ~(with-meta a {:tag 'clojure.lang.Associative}) ~k ~v))}
+  [^Associative a k v]
+  (.assoc a k v))
+
+;;; Credit Metosin
+;;; https://github.com/metosin/compojure-api/blob/master/src/compojure/api/common.clj#L46
+(defn fast-merge [m1 m2]
+  (reduce-kv
+    (fn [acc k v]
+      (fast-assoc acc k v))
+    (or m1 {})
+    m2))
+
 
 (defprotocol CORSOriginHandler
-  (origin [this] "Origin that this handler can handle")
   (preflight-response [this request-origin] "Success preflight response for the origin")
   (add-headers-to-response [this response request-origin] "Add CORS headers to response for the origin"))
 
 
 (deftype CORSOriginStaticHandler [preflight-response-template response-headers origin]
          CORSOriginHandler
-         (origin [this] origin)
          (preflight-response [this _]
            preflight-response-template)
          (add-headers-to-response [this response _]
-           (update response :headers merge
+           (update response :headers fast-merge
                    response-headers)))
 
 
 (deftype CORSOriginAnyOriginHandler [preflight-response-template response-headers]
          CORSOriginHandler
-         (origin [this] "*")
          (preflight-response [this _]
            preflight-response-template)
          (add-headers-to-response [this response _]
-           (update response :headers merge
+           (update response :headers fast-merge
                    response-headers))
          ILookup
          (valAt [this request-origin]
@@ -46,13 +62,12 @@
 
 (deftype CORSOriginFnHandler [preflight-response-template response-headers allowed-origin?]
          CORSOriginHandler
-         (origin [this] "?")
          (preflight-response [this request-origin]
            (update preflight-response-template :headers assoc
                    "access-control-allow-origin" request-origin
                    "vary" request-origin))
          (add-headers-to-response [this response request-origin]
-           (update response :headers merge
+           (update response :headers fast-merge
                    (assoc response-headers
                           "access-control-allow-origin" request-origin
                           "vary" request-origin)))
@@ -69,16 +84,16 @@
 (deftype CombinedCORSHandlerLookup [lookups any-origin-handler]
   ILookup
   (valAt [_ request-origin]
-    (if-let [handler (some #(get % request-origin) lookups)]
+    (if-let [handler (some #(.valAt ^ILookup % request-origin) lookups)]
       handler
       any-origin-handler))
   (valAt [_ request-origin _]
-    (if-let [handler (some #(get % request-origin) lookups)]
+    (if-let [handler (some #(.valAt ^ILookup % request-origin) lookups)]
       handler
       any-origin-handler)))
 
 
-(defn preflight-request?
+(defn ^boolean preflight-request?
   "Check if the ring request is a valid preflight request"
   [req]
   (and (identical? :options (:request-method req))
@@ -86,9 +101,9 @@
        (contains? (:headers req) "access-control-request-method")))
 
 
-(defn get-origin
+(defn ^String get-origin
   "Get origin header from standard Ring request"
-  [req]
+  [^IPersistentMap req]
   (-> req :headers (get "origin")))
 
 
@@ -99,7 +114,7 @@
     ([req]
      (if (preflight-request? req)
        (let [request-origin (get-origin req)
-             cors-handler (get cors request-origin)]
+             cors-handler (.valAt ^ILookup cors request-origin)]
          (cond
            cors-handler
            (preflight-response cors-handler request-origin)

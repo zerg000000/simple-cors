@@ -1,4 +1,5 @@
-(ns simple-cors.data)
+(ns simple-cors.data
+  (:require [manifold.deferred :as d]))
 
 (def ok-response {:status 200 :body "OK"})
 
@@ -11,6 +12,11 @@
 (defn ok-future-handler
   ([_] ok-response)
   ([_ respond raise] (respond (future ok-response))))
+
+
+(defn ok-deferred-handler
+  ([_] ok-response)
+  ([_ respond raise] (respond (d/success-deferred ok-response))))
 
 
 (def cors-config

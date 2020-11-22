@@ -1,6 +1,7 @@
 (ns simple-cors.reitit.interceptor
   (:require
-    [simple-cors.core :as cors]))
+    [simple-cors.core :as cors])
+  (:import [clojure.lang ILookup]))
 
 
 (defn cors-interceptor
@@ -13,7 +14,7 @@
      :leave (fn cors-leave
               [ctx]
               (let [request-origin (-> ctx :request cors/get-origin)
-                    cors-handler (get cors request-origin)]
+                    cors-handler (.valAt ^ILookup cors request-origin)]
                 (cond-> ctx
                   cors-handler (update :response #(cors/add-headers-to-response cors-handler % request-origin)))))}))
 

@@ -7,7 +7,8 @@
     [simple-cors.core :as cors-core]
     [simple-cors.data :as data]
     [simple-cors.reitit.interceptor :as interceptor]
-    [simple-cors.ring.middleware :as ring]))
+    [simple-cors.ring.middleware :as ring]
+    [manifold.deferred :as d]))
 
 
 (def ^:dynamic *app* nil)
@@ -30,8 +31,7 @@
   [f]
   (binding [*app* (http/ring-handler
                     (http/router ["/api" {:get data/ok-future-handler
-                                          :post data/ok-future-handler
-                                          :delete data/ok-future-handler}]
+                                          :post data/ok-future-handler}]
                                  {:reitit.http/default-options-endpoint (interceptor/make-default-options-endpoint
                                                                           {:cors-config data/cors-config})})
                     {:executor reitit.interceptor.sieppari/executor
@@ -48,16 +48,24 @@
 (defn wrap-aleph-async-ring-adatpor
   [h]
   (fn aleph-async-ring-adatpor
-    ([req] @(h req))
+    ([req] (let [resp (h req)]
+             (if (d/deferrable? resp)
+               @resp
+               resp)))
     ([req respond raise]
      (try
-       (respond @(h req))
-       (catch Exception ex (raise ex nil))))))
+       (respond (let [resp (h req)]
+                  (if (d/deferrable? resp)
+                    @resp
+                    resp)))
+       (catch Exception ex
+         (.printStackTrace ex)
+         (raise ex))))))
 
 
 (defn provide-aleph
   [f]
-  (binding [*app* (-> data/ok-future-handler
+  (binding [*app* (-> data/ok-deferred-handler
                       (aleph/wrap {:cors-config data/cors-config})
                       (wrap-aleph-async-ring-adatpor))]
     (f)))
@@ -107,7 +115,7 @@
   (testing "normal browser behaviour"
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* data/normal-preflight-request
              respond
              raise)
@@ -116,7 +124,7 @@
 
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* data/normal-cors-request
              respond
              raise)
@@ -126,7 +134,7 @@
   (testing "non browser should work as usual"
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* data/normal-non-cors-request
              respond
              raise)
@@ -135,7 +143,7 @@
 
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* data/dirty-non-cors-request respond raise)
       (is (= data/normal-non-cors-response @p)
           "should return response without cors headers")))
@@ -143,7 +151,7 @@
   (testing "browser under cross origin attack"
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* data/cross-origin-cors-request
              respond raise)
 
@@ -152,7 +160,7 @@
 
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* data/cross-origin-preflight-request
              respond raise)
       (is (= cors-core/default-preflight-forbidden-response @p)
@@ -160,7 +168,7 @@
 
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* (update data/cross-origin-preflight-request :headers dissoc "access-control-request-headers")
              respond raise)
       (is (= cors-core/default-preflight-forbidden-response @p)
@@ -168,7 +176,7 @@
 
     (let [p (promise)
           respond #(deliver p %)
-          raise #(throw (ex-info "unlikely" {}))]
+          raise #(deliver p %)]
       (*app* (update data/cross-origin-preflight-request :headers dissoc "origin")
              respond raise)
       (is (= cors-core/default-preflight-forbidden-response @p)

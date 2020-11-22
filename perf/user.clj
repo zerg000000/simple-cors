@@ -48,19 +48,36 @@
                            "https://5.google.com"
                            "https://6.google.com"]}})
 
+(def encors-config
+  {:allowed-origins #{"https://google.com"
+                      "https://1.google.com"
+                      "https://2.google.com"
+                      "https://3.google.com"
+                      "https://4.google.com"
+                      "https://5.google.com"
+                      "https://6.google.com"}
+   :allowed-methods #{:get :post}
+   :request-headers #{"Authorization" "Content-Type"}
+   :exposed-headers nil
+   :allow-credentials? false
+   :origin-varies? true
+   :max-age nil
+   :require-origin? false
+   :ignore-failures? true})
+
 (def simple-cors-app
   (simple-cors/wrap handler simple-cors-config))
 
 (def simple-cors-fn-app
   (simple-cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
                                            :allowed-request-headers ["Authorization" "Content-Type"]
-                                           :origins #{["https://google.com"
-                                                       "https://1.google.com"
-                                                       "https://2.google.com"
-                                                       "https://3.google.com"
-                                                       "https://4.google.com"
-                                                       "https://5.google.com"
-                                                       "https://6.google.com"]}}}))
+                                           :origins #{"https://google.com"
+                                                      "https://1.google.com"
+                                                      "https://2.google.com"
+                                                      "https://3.google.com"
+                                                      "https://4.google.com"
+                                                      "https://5.google.com"
+                                                      "https://6.google.com"}}}))
 
 (def simple-cors-any-app
   (simple-cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
@@ -82,49 +99,13 @@
                        :access-control-allow-methods [:get :post]))
 
 (def encors-aleph-app
-  (com.unbounce.encors.aleph/wrap-cors aleph-handler {:allowed-origins #{"https://google.com"
-                                                                         "https://1.google.com"
-                                                                         "https://2.google.com"
-                                                                         "https://3.google.com"
-                                                                         "https://4.google.com"
-                                                                         "https://5.google.com"
-                                                                         "https://6.google.com"}
-                                                      :allowed-methods #{:get :post}
-                                                      :request-headers #{"Authorization" "Content-Type"}
-                                                      :exposed-headers nil
-                                                      :allow-credentials? false
-                                                      :origin-varies? true
-                                                      :max-age nil
-                                                      :require-origin? false
-                                                      :ignore-failures? true}))
+  (com.unbounce.encors.aleph/wrap-cors aleph-handler encors-config))
 
 (def encors-app
-  (encors/wrap-cors handler {:allowed-origins #{"https://google.com"
-                                                "https://1.google.com"
-                                                "https://2.google.com"
-                                                "https://3.google.com"
-                                                "https://4.google.com"
-                                                "https://5.google.com"
-                                                "https://6.google.com"}
-                             :allowed-methods #{:get :post}
-                             :request-headers #{"Authorization" "Content-Type"}
-                             :exposed-headers nil
-                             :allow-credentials? false
-                             :origin-varies? true
-                             :max-age nil
-                             :require-origin? false
-                             :ignore-failures? true}))
+  (encors/wrap-cors handler encors-config))
 
 (def sieppari-app
-  [(simple-cors-interceptor/cors-interceptor {:cors-config {:allowed-request-methods [:post :get]
-                                                            :allowed-request-headers ["Authorization" "Content-Type"]
-                                                            :origins ["https://google.com"
-                                                                      "https://1.google.com"
-                                                                      "https://2.google.com"
-                                                                      "https://3.google.com"
-                                                                      "https://4.google.com"
-                                                                      "https://5.google.com"
-                                                                      "https://6.google.com"]}})
+  [(simple-cors-interceptor/cors-interceptor simple-cors-config)
    aleph-handler])
 
 (comment
@@ -132,13 +113,13 @@
   (cc/quick-bench (let [p (d/deferred)]
                     (simple-cors-app request #(d/success! p %) #(d/error! p %))
                     @p))
-  ; Execution time mean : 536.591903 ns
+  ; Execution time mean : 535.353161 ns
   (cc/quick-bench (let [p (d/deferred)]
                     (ring-cors-app request #(d/success! p %) #(d/error! p %))
                     @p))
   ; Execution time mean : 7.326039 µs
   (cc/quick-bench @(simple-cors-aleph-app request))
-  ; Execution time mean : 454.023941 ns
+  ; Execution time mean : 529.702230 ns
   (cc/quick-bench @(encors-aleph-app request))
   ; Execution time mean : 1.660398 µs
   (cc/quick-bench (sieppari/execute sieppari-app request))
@@ -149,19 +130,19 @@
   (simple-cors-app request)
   (cc/quick-bench (simple-cors-app preflight-request))
   (cc/quick-bench (simple-cors-app request))
-  ;Evaluation count : 245159880 in 60 samples of 4085998 calls.
-  ;             Execution time mean : 238.204980 ns
-  ;    Execution time std-deviation : 5.898590 ns
-  ;   Execution time lower quantile : 232.733948 ns ( 2.5%)
-  ;   Execution time upper quantile : 251.402905 ns (97.5%)
-  ;                   Overhead used : 7.548822 ns
+  ;Evaluation count : 2937684 in 6 samples of 489614 calls.
+  ;             Execution time mean : 196.854083 ns
+  ;    Execution time std-deviation : 0.236949 ns
+  ;   Execution time lower quantile : 196.594299 ns ( 2.5%)
+  ;   Execution time upper quantile : 197.069139 ns (97.5%)
+  ;                   Overhead used : 7.545142 ns
 
-  ;Evaluation count : 136347540 in 60 samples of 2272459 calls.
-  ;             Execution time mean : 430.691792 ns
-  ;    Execution time std-deviation : 10.678282 ns
-  ;   Execution time lower quantile : 422.111687 ns ( 2.5%)
-  ;   Execution time upper quantile : 455.802903 ns (97.5%)
-  ;                   Overhead used : 7.548822 ns
+  ;Evaluation count : 2336154 in 6 samples of 389359 calls.
+  ;             Execution time mean : 285.621191 ns
+  ;    Execution time std-deviation : 42.414432 ns
+  ;   Execution time lower quantile : 251.454378 ns ( 2.5%)
+  ;   Execution time upper quantile : 336.427211 ns (97.5%)
+  ;                   Overhead used : 7.545142 ns
 
   (ring-cors-app request)
   (cc/quick-bench (ring-cors-app preflight-request))
@@ -197,14 +178,15 @@
   ;   Execution time upper quantile : 1.641337 µs (97.5%)
   ;                   Overhead used : 7.548822 ns
 
+  (simple-cors-fn-app request)
   (cc/quick-bench (simple-cors-fn-app preflight-request))
   (cc/quick-bench (simple-cors-fn-app request))
   ; with set
   ; Execution time mean : 248.514481 ns
-  ; Execution time mean : 56.350691 ns
+  ; Execution time mean : 350.506847 ns
 
   (cc/quick-bench (simple-cors-any-app preflight-request))
   (cc/quick-bench (simple-cors-any-app request))
-  ; Execution time mean : 305.917533 ns
-  ; Execution time mean : 502.012656 ns
+  ; Execution time mean : 250.614513 ns
+  ; Execution time mean : 306.921599 ns
   (doc cc/quick-bench))

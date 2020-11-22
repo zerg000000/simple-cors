@@ -1,6 +1,7 @@
 (ns simple-cors.ring.middleware
   (:require
-    [simple-cors.core :as cors]))
+    [simple-cors.core :as cors])
+  (:import [clojure.lang ILookup]))
 
 
 (defn wrap
@@ -10,13 +11,15 @@
       ([req]
        (if (identical? :options (:request-method req))
          (preflight-handler req)
-         (if-let [cors-handler (get cors (cors/get-origin req))]
-           (cors/add-headers-to-response cors-handler (handler req) (cors/get-origin req))
-           (handler req))))
+         (let [request-origin (cors/get-origin req)]
+           (if-let [cors-handler (.valAt ^ILookup cors request-origin)]
+             (cors/add-headers-to-response cors-handler (handler req) request-origin)
+             (handler req)))))
       ([req respond raise]
        (if (identical? :options (:request-method req))
          (respond (preflight-handler req))
-         (if-let [cors-handler (get cors (cors/get-origin req))]
-           (handler req #(respond (cors/add-headers-to-response cors-handler % (cors/get-origin req)))
-                    raise)
-           (handler req respond raise)))))))
+         (let [request-origin (cors/get-origin req)]
+           (if-let [cors-handler (.valAt ^ILookup cors request-origin)]
+             (handler req #(respond (cors/add-headers-to-response cors-handler % request-origin))
+                      raise)
+             (handler req respond raise))))))))
