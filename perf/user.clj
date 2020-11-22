@@ -182,8 +182,8 @@
   (cc/quick-bench (simple-cors-fn-app preflight-request))
   (cc/quick-bench (simple-cors-fn-app request))
   ; with set
-  ; Execution time mean : 248.514481 ns
-  ; Execution time mean : 350.506847 ns
+  ; Execution time mean : 213.377427 ns
+  ; Execution time mean : 297.227465 ns
 
   (cc/quick-bench (simple-cors-any-app preflight-request))
   (cc/quick-bench (simple-cors-any-app request))

@@ -1,7 +1,7 @@
 (ns simple-cors.core
   (:require
     [clojure.string :as str])
-  (:import [clojure.lang ILookup Associative IPersistentMap]))
+  (:import [clojure.lang ILookup Associative]))
 
 
 (def default-preflight-forbidden-response {:status 403})
