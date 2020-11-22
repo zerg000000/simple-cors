@@ -1,8 +1,7 @@
 (ns simple-cors.aleph.middleware
   (:require
     [manifold.deferred :as d]
-    [simple-cors.core :as cors])
-  (:import [clojure.lang ILookup]))
+    [simple-cors.core :as cors]))
 
 
 (defn wrap
@@ -12,6 +11,6 @@
       (if (identical? :options (:request-method req))
         (d/success-deferred (preflight-handler req))
         (let [request-origin (cors/get-origin req)]
-          (d/chain' (handler req) #(if-let [cors-handler (.valAt ^ILookup cors request-origin)]
+          (d/chain' (handler req) #(if-let [cors-handler (cors/val-at cors request-origin)]
                                       (cors/add-headers-to-response cors-handler % request-origin)
                                       %)))))))

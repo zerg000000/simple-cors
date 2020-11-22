@@ -60,6 +60,7 @@
 
 (def normal-non-cors-request
   {:request-method :post
+   :headers {}
    :uri "/api"})
 
 

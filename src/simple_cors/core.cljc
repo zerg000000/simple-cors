@@ -28,6 +28,10 @@
     (or m1 {})
     m2))
 
+(defmacro val-at
+  "Inline .valAt"
+  [m k]
+  `(.valAt  ~(with-meta m {:tag 'clojure.lang.ILookup}) ~k))
 
 (defprotocol CORSOriginHandler
   (preflight-response [this request-origin] "Success preflight response for the origin")
@@ -36,18 +40,18 @@
 
 (deftype CORSOriginStaticHandler [preflight-response-template response-headers origin]
          CORSOriginHandler
-         (preflight-response [this _]
+         (preflight-response [_ _]
            preflight-response-template)
-         (add-headers-to-response [this response _]
+         (add-headers-to-response [_ response _]
            (update response :headers fast-merge
                    response-headers)))
 
 
 (deftype CORSOriginAnyOriginHandler [preflight-response-template response-headers]
          CORSOriginHandler
-         (preflight-response [this _]
+         (preflight-response [_ _]
            preflight-response-template)
-         (add-headers-to-response [this response _]
+         (add-headers-to-response [_ response _]
            (update response :headers fast-merge
                    response-headers))
          ILookup
@@ -84,11 +88,11 @@
 (deftype CombinedCORSHandlerLookup [lookups any-origin-handler]
   ILookup
   (valAt [_ request-origin]
-    (if-let [handler (some #(.valAt ^ILookup % request-origin) lookups)]
+    (if-let [handler (some #(val-at % request-origin) lookups)]
       handler
       any-origin-handler))
   (valAt [_ request-origin _]
-    (if-let [handler (some #(.valAt ^ILookup % request-origin) lookups)]
+    (if-let [handler (some #(val-at % request-origin) lookups)]
       handler
       any-origin-handler)))
 
@@ -101,10 +105,13 @@
        (contains? (:headers req) "access-control-request-method")))
 
 
-(defn ^String get-origin
-  "Get origin header from standard Ring request"
-  [^IPersistentMap req]
-  (-> req :headers (get "origin")))
+(defmacro get-origin
+  "Get origin header from standard Ring request (inline).
+   Assume :headers will always be an IPersistentMap"
+  [req]
+  `(-> ~req
+       (:headers)
+       (val-at "origin")))
 
 
 (defn make-cors-preflight-handler
@@ -114,14 +121,12 @@
     ([req]
      (if (preflight-request? req)
        (let [request-origin (get-origin req)
-             cors-handler (.valAt ^ILookup cors request-origin)]
-         (cond
-           cors-handler
+             cors-handler (val-at cors request-origin)]
+         (if cors-handler
            (preflight-response cors-handler request-origin)
-           request-origin
-           forbidden-response
-           :else
-           ok-response))
+           (if request-origin
+             forbidden-response
+             ok-response)))
        forbidden-response))
     ([req respond raise]
      (respond (cors-preflight-handler req)))))
@@ -202,18 +207,21 @@
 
 
 (defn compile-combined-cors-configs
-  "Combine multiple CORSHandlerLookup, lookup time will grow linearly"
+  "Combine multiple ILookup, lookup time will grow linearly"
   ([configs] (compile-combined-cors-configs configs nil))
   ([configs any-origin-config]
    (->CombinedCORSHandlerLookup (map compile-cors-config configs)
                                 (when any-origin-config
                                   (compile-cors-config any-origin-config)))))
 
-(defn compile-cors [{:keys [cors-config
-                            preflight-forbidden-response
-                            preflight-ok-response]
-                     :or {preflight-forbidden-response default-preflight-forbidden-response
-                          preflight-ok-response default-preflight-ok-response}}]
+(defn compile-cors
+  "Return {:cors ... :preflight-handler} cors must implemented ILookup for lookup handler by origin.
+   preflight-handler is a normal ring handler both 1-arity, 3-arity would be provided."
+  [{:keys [cors-config
+           preflight-forbidden-response
+           preflight-ok-response]
+    :or {preflight-forbidden-response default-preflight-forbidden-response
+         preflight-ok-response default-preflight-ok-response}}]
   (let [cors (cond
                (map? cors-config) (compile-cors-config cors-config)
                (and (vector? cors-config) (= (count cors-config) 1))
