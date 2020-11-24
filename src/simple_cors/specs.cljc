@@ -33,11 +33,14 @@
 (s/fdef simple-cors.core/compile-cors-config
         :args (s/cat :config :cors/config :preflight-ok-response map?))
 
+
 (s/def :cors/cors-config
   (s/or :config :cors/config :configs (s/+ :cors/config)))
 
+
 (s/def :cors/preflight-ok-response map?)
 (s/def :cors/preflight-forbidden-response map?)
+
 
 (s/fdef simple-cors.core/compile-cors
         :args (s/cat :full-config (s/keys :req-un [:cors/cors-config]
