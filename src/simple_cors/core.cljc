@@ -175,10 +175,10 @@
 
 (defn compile-cors-static-config
   "Compile CORS config to map[string,CORSOriginHandler]"
-  [config]
+  [config preflight-ok-response]
   (->> (for [origin (:origins config)]
-         [origin (->CORSOriginStaticHandler {:status 200
-                                             :headers (preflight-response-headers config origin)}
+         [origin (->CORSOriginStaticHandler (update preflight-ok-response :headers
+                                                    fast-merge (preflight-response-headers config origin))
                                             (response-headers config origin)
                                             origin)])
        (into {})))
@@ -186,39 +186,39 @@
 
 (defn compile-cors-any-origin-config
   "Compile cors for any origin"
-  [config]
+  [config preflight-ok-response]
   ; https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Credentialed_requests_and_wildcards
-  (->CORSOriginAnyOriginHandler {:status 200
-                                 :headers (preflight-response-headers config "*")}
+  (->CORSOriginAnyOriginHandler (update preflight-ok-response :headers
+                                        fast-merge (preflight-response-headers config "*"))
                                 (dissoc (response-headers config "*")
                                         "access-control-allow-credentials")))
 
 
 (defn compile-cors-fn-origin-config
   "Slow but flexible cors"
-  [config]
-  (->CORSOriginFnHandler {:status 200
-                          :headers (preflight-response-headers config nil)}
+  [config preflight-ok-response]
+  (->CORSOriginFnHandler (update preflight-ok-response :headers
+                                 fast-merge (preflight-response-headers config nil))
                          (response-headers config nil)
                          (:origins config)))
 
 
 (defn compile-cors-config
-  [{:keys [origins] :as config}]
+  [{:keys [origins] :as config} preflight-ok-response]
   (cond
-    (= "*" origins) (compile-cors-any-origin-config config)
+    (= "*" origins) (compile-cors-any-origin-config config preflight-ok-response)
     (or (sequential? origins)
-        (set? origins)) (compile-cors-static-config config)
-    (fn? origins) (compile-cors-fn-origin-config config)))
+        (set? origins)) (compile-cors-static-config config preflight-ok-response)
+    (fn? origins) (compile-cors-fn-origin-config config  preflight-ok-response)))
 
 
 (defn compile-combined-cors-configs
   "Combine multiple ILookup, lookup time will grow linearly"
-  ([configs] (compile-combined-cors-configs configs nil))
-  ([configs any-origin-config]
-   (->CombinedCORSHandlerLookup (map compile-cors-config configs)
+  ([configs preflight-ok-response] (compile-combined-cors-configs configs nil  preflight-ok-response))
+  ([configs any-origin-config preflight-ok-response]
+   (->CombinedCORSHandlerLookup (map #(compile-cors-config % preflight-ok-response) configs)
                                 (when any-origin-config
-                                  (compile-cors-config any-origin-config)))))
+                                  (compile-cors-config any-origin-config preflight-ok-response)))))
 
 
 (defn compile-cors
@@ -230,13 +230,13 @@
     :or {preflight-forbidden-response default-preflight-forbidden-response
          preflight-ok-response default-preflight-ok-response}}]
   (let [cors (cond
-               (map? cors-config) (compile-cors-config cors-config)
+               (map? cors-config) (compile-cors-config cors-config  preflight-ok-response)
                (and (vector? cors-config) (= (count cors-config) 1))
-               (compile-cors-config (first cors-config))
+               (compile-cors-config (first cors-config)  preflight-ok-response)
                (vector? cors-config)
                (let [any-origin (first (filter #(= "*" (:origins %)) cors-config))
                      others (filter #(not= "*" (:origins %)) cors-config)]
-                 (compile-combined-cors-configs others any-origin))
+                 (compile-combined-cors-configs others any-origin preflight-ok-response))
                :else (throw (ex-info "not a valid cors config" {})))]
     {:cors cors
      :preflight-handler (make-cors-preflight-handler cors

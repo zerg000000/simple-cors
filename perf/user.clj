@@ -80,13 +80,14 @@
 (def simple-cors-fn-app
   (simple-cors/wrap handler {:cors-config {:allowed-request-methods [:post :get]
                                            :allowed-request-headers ["Authorization" "Content-Type"]
-                                           :origins #{"https://google.com"
-                                                      "https://1.google.com"
-                                                      "https://2.google.com"
-                                                      "https://3.google.com"
-                                                      "https://4.google.com"
-                                                      "https://5.google.com"
-                                                      "https://6.google.com"}}}))
+                                           :origins (fn [origin]
+                                                      (#{"https://google.com"
+                                                         "https://1.google.com"
+                                                         "https://2.google.com"
+                                                         "https://3.google.com"
+                                                         "https://4.google.com"
+                                                         "https://5.google.com"
+                                                         "https://6.google.com"} origin))}}))
 
 
 (def simple-cors-any-app
@@ -200,8 +201,8 @@
   (cc/quick-bench (simple-cors-fn-app preflight-request))
   (cc/quick-bench (simple-cors-fn-app request))
   ; with set
-  ; Execution time mean : 213.377427 ns
-  ; Execution time mean : 297.227465 ns
+  ; Execution time mean : 606.929269 ns
+  ; Execution time mean : 457.513727 ns
 
   (cc/quick-bench (simple-cors-any-app preflight-request))
   (cc/quick-bench (simple-cors-any-app request))

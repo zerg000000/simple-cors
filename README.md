@@ -111,6 +111,9 @@ The ultimate solution is to provide your own matching function
 
 ### Combine Multiple Config
 
+Support combining multiple CORS config with performance penalty.
+At most one AnyOrigin in configs, and will act as the last fallback. 
+
 ```clojure
 {:cors-config [{...
                 :origin "*"

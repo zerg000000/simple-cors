@@ -32,11 +32,36 @@
            (cors/preflight-request? {:request-method :options}))
         "false since don't have cors headers")
     (is (= false
-           (cors/preflight-request? {:request-method :get
+           (cors/preflight-request? {:request-method :options
                                      :headers {"access-control-request-headers" "authorization,content-type"
-                                               "access-control-request-method" "POST"
-                                               "origin" "https://google.com"}}))
+                                               "access-control-request-method" "POST"}}))
         "false since don't have origin")))
+
+
+(deftest test-preflight-responses-config
+  (let [{:keys [cors preflight-handler]} (cors/compile-cors {:cors-config {:allowed-request-methods [:get]
+                                                                           :allowed-request-headers ["Authorization" "Content-Type"]
+                                                                           :origins ["https://yahoo.com"
+                                                                                     "https://google.com"]
+                                                                           :max-age 300}
+                                                             :preflight-ok-response {:status 204 :body "Fun"}
+                                                             :preflight-forbidden-response {:status 401 :body "Not Fun"}})]
+    (is (= (preflight-handler {:request-method :options
+                               :headers {"access-control-request-headers" "authorization,content-type"
+                                         "access-control-request-method" "POST"
+                                         "origin" "https://google.com"}})
+           {:status 204 :body "Fun"
+            :headers {"access-control-allow-headers" "Authorization, Content-Type",
+                      "access-control-allow-methods" "GET",
+                      "access-control-allow-origin" "https://google.com",
+                      "access-control-max-age" 300,
+                      "vary" "https://google.com"}})
+        "should return custom status code ok response")
+    (is (= (preflight-handler {:request-method :options
+                               :headers {"access-control-request-headers" "authorization,content-type"
+                                         "access-control-request-method" "POST"}})
+           {:status 401 :body "Not Fun"})
+        "should return custom status code forbidden response")))
 
 
 (deftest test-compile-cors-static-config
@@ -45,7 +70,7 @@
                 :origins ["https://yahoo.com"
                           "https://google.com"]
                 :max-age 300}
-        cors (cors/compile-cors-config config)]
+        cors (cors/compile-cors-config config cors/default-preflight-ok-response)]
     (is (get cors "https://yahoo.com")
         "should get handler for origins")
     (is (get cors "https://google.com")
@@ -59,7 +84,7 @@
                 :allowed-request-headers ["Authorization"]
                 :origins "*"
                 :max-age 300}
-        cors (cors/compile-cors-config config)]
+        cors (cors/compile-cors-config config cors/default-preflight-ok-response)]
     (is (get cors "https://yahoo.com")
         "should get handler for all origins")
     (is (get cors "https://google.com")
@@ -87,7 +112,7 @@
                                            (and (str/starts-with? origin "https://")
                                                 (str/ends-with? origin ".com")))
                 :max-age                 300}
-        cors (cors/compile-cors-config config)]
+        cors (cors/compile-cors-config config cors/default-preflight-ok-response)]
     (is (get cors "https://yahoo.com")
         "should get handler for all https://*.com")
     (is (get cors "https://google.com")
