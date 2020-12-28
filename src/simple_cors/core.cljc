@@ -147,8 +147,9 @@
                                                (str/join ", "))
            "access-control-allow-headers" (->> (:allowed-request-headers config)
                                                (map name)
-                                               (str/join ", "))
-           "access-control-max-age"       (:max-age config 0)}
+                                               (str/join ", "))}
+    (:max-age config)
+    (assoc "access-control-max-age" (:max-age config))
     (true? (:allow-credentials? config))
     (assoc "access-control-allow-credentials" "true")
     (seq (:preflight-response-headers config))

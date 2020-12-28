@@ -38,6 +38,33 @@
         "false since don't have origin")))
 
 
+(deftest test-generate-preflight-headers
+  (is (= {"access-control-allow-headers" "Authorization, Content-Type",
+          "access-control-allow-methods" "GET",
+          "access-control-allow-origin" "http://localhost:3000",
+          "vary" "http://localhost:3000"}
+         (cors/preflight-response-headers
+           {:allowed-request-methods [:get]
+            :allowed-request-headers ["Authorization" "Content-Type"]
+            :origins ["https://yahoo.com"
+                      "https://google.com"]}
+           "http://localhost:3000"))
+      "max-age should be optional")
+  (is (= {"access-control-allow-headers" "Authorization, Content-Type",
+          "access-control-allow-methods" "GET",
+          "access-control-allow-origin" "http://localhost:3000",
+          "vary" "http://localhost:3000"
+          "access-control-max-age" "300"}
+         (cors/preflight-response-headers
+           {:allowed-request-methods [:get]
+            :allowed-request-headers ["Authorization" "Content-Type"]
+            :origins ["https://yahoo.com"
+                      "https://google.com"]
+            :max-age "300"}
+           "http://localhost:3000"))
+      "max-age should follow cors"))
+
+
 (deftest test-preflight-responses-config
   (let [{:keys [cors preflight-handler]} (cors/compile-cors {:cors-config {:allowed-request-methods [:get]
                                                                            :allowed-request-headers ["Authorization" "Content-Type"]
