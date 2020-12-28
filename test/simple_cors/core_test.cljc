@@ -81,7 +81,7 @@
             :headers {"access-control-allow-headers" "Authorization, Content-Type",
                       "access-control-allow-methods" "GET",
                       "access-control-allow-origin" "https://google.com",
-                      "access-control-max-age" 300,
+                      "access-control-max-age" "300",
                       "vary" "https://google.com"}})
         "should return custom status code ok response")
     (is (= (preflight-handler {:request-method :options
@@ -122,7 +122,7 @@
       (is (= {:headers {"access-control-allow-headers" "Authorization"
                         "access-control-allow-methods" "GET"
                         "access-control-allow-origin" "*"
-                        "access-control-max-age" 300}
+                        "access-control-max-age" "300"}
               :status 200}
              (cors/preflight-response h "https://anyway.co"))
           "should allow preflight for all origins")

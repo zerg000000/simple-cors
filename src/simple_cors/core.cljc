@@ -149,7 +149,7 @@
                                                (map name)
                                                (str/join ", "))}
     (:max-age config)
-    (assoc "access-control-max-age" (:max-age config))
+    (assoc "access-control-max-age" (str (:max-age config)))
     (true? (:allow-credentials? config))
     (assoc "access-control-allow-credentials" "true")
     (seq (:preflight-response-headers config))

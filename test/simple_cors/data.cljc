@@ -41,7 +41,7 @@
   {:headers {"access-control-allow-headers" "Authorization"
              "access-control-allow-methods" "POST, GET"
              "access-control-allow-origin" "https://yahoo.com"
-             "access-control-max-age" 300
+             "access-control-max-age" "300"
              "vary" "https://yahoo.com"}
    :status 200})
 
