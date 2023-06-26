@@ -47,7 +47,7 @@ When use in [Reitit](https://github.com/metosin/reitit)
     (http/ring-handler
      (http/router routes
                   {:reitit.http/default-options-endpoint 
-                   (cors/default-options-endpoint config)})
+                   (cors/make-default-options-endpoint config)})
      {:executor reitit.interceptor.sieppari/executor
       :interceptors [(cors/cors-interceptor config)]})))
 ```
